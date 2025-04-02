@@ -1,5 +1,9 @@
 use super::utils::{Coordinate, Type};
-use super::cell::Operand;
+use super::operand::Operand;
+
+// equation used to have reference to cell but now it has reference to operand
+// this means cell and equation are meaningless without a spreadsheet
+// if possible use a ref to a cell (some clone issue)
 pub struct Equation<T> {
     coordinate: Coordinate, 
     t: Type, 

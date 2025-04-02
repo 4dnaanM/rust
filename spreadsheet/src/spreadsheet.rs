@@ -1,5 +1,7 @@
 use crate::utils::Type;
-use crate::cell::Operand;
+use crate::operand::Operand;
+
+// should expose set and get for cell value, and set for cell equation
 pub struct SpreadSheet<T> {
     m: usize, 
     n: usize, 

@@ -1,5 +1,5 @@
 mod utils;
-mod cell;
+mod operand;
 mod equation;
 mod spreadsheet;
 

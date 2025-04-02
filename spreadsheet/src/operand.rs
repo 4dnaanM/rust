@@ -2,11 +2,25 @@ use std::collections::HashSet;
 
 use crate::utils::Coordinate;
 use crate::equation::Equation;
+
+// cell and value are not meant to be public
+// callers should work only with operand
+
 struct Cell<T> {
     coordinate: Coordinate, 
     value: T,
     equation: Equation<T>,
     downstream_neighbors: HashSet<Operand<T>>
+}
+
+struct Value<T> {
+    coordinate: Coordinate,
+    value: T
+} 
+
+pub enum Operand<T> {
+    Cell(Box<Cell<T>>), 
+    Value(Value<T>)
 }
 
 impl<T: From<i32>> Cell<T> {
@@ -23,10 +37,7 @@ impl<T: From<i32>> Cell<T> {
     }
 }
 
-struct Value<T> {
-    coordinate: Coordinate,
-    value: T
-} 
+
 
 impl<T: From<i32>> Value<T> {
     fn new_helper(coord: Coordinate, val: T) -> Self {
@@ -38,11 +49,6 @@ impl<T: From<i32>> Value<T> {
     fn new(row:usize, col:usize, val:T) -> Self {
         Self::new_helper(Coordinate(row,col),val)
     }
-}
-
-pub enum Operand<T> {
-    Cell(Box<Cell<T>>), 
-    Value(Value<T>)
 }
 
 impl<T: From<i32>> Operand<T> {
