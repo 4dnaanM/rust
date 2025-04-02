@@ -11,11 +11,19 @@ pub struct Equation<T> {
 }
 
 impl<T: From<i32>> Equation<T> {
-    pub fn new(coord: Coordinate) -> Self {
+    pub fn new(coord: Coordinate, t: Option<Type>, operands: Option<Vec<Operand<T>>>) -> Self {
+        
+        let t = t.unwrap_or(Type::NUL);
+        let operands = if t == Type::NUL {
+            Vec::<Operand<T>>::new()
+        } else {
+            operands.expect("Operands cannot be None when Type is not NUL")
+        };
+
         Equation {
-            coordinate: coord, 
-            t: Type::NUL, 
-            operands: Vec::<Operand<T>>::new()
+            coordinate: coord,
+            t,
+            operands,
         }
     }
 

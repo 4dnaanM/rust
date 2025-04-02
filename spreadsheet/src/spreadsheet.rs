@@ -2,6 +2,7 @@ use crate::utils::Type;
 use crate::operand::Operand;
 
 // should expose set and get for cell value, and set for cell equation
+// all the traversal and updation methods should be defined here like findDownstream, toposort 
 pub struct SpreadSheet<T> {
     m: usize, 
     n: usize, 
@@ -15,7 +16,7 @@ impl<T: Copy + From<i32>> SpreadSheet<T> {
         for i in 0..m {
             let mut row = Vec::<Operand<T>>::with_capacity(n);
             for j in 0..n {
-                row.push(Operand::new_value(i, j, T::from(0)));
+                row.push(Operand::new(i, j, Some(T::from(0))));
             }
             cells.push(row);
         }

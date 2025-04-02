@@ -24,16 +24,14 @@ pub enum Operand<T> {
 }
 
 impl<T: From<i32>> Cell<T> {
-    fn new_from_coord(coord: Coordinate) -> Self {
+    fn new<U: Into<Coordinate>>(input: U) -> Self {
+        let coordinate = input.into();
         Cell {
-            coordinate: coord,
-            value: T::from(0), 
-            equation: Equation::new(coord),
-            downstream_neighbors: HashSet::<Operand<T>>::new()
+            coordinate,
+            value: T::from(0),
+            equation: Equation::new(coordinate,None, None),
+            downstream_neighbors: HashSet::new(),
         }
-    }
-    fn new(row: usize, col: usize) -> Self {
-        Self::new_from_coord(Coordinate(row,col))
     }
 }
 
@@ -52,14 +50,13 @@ impl<T: From<i32>> Value<T> {
 }
 
 impl<T: From<i32>> Operand<T> {
-    pub fn new_cell(row: usize, col: usize) -> Self {
-        Operand::Cell(Box::new(Cell::new(row,col)))
+    pub fn new(row: usize, col: usize, val: Option<T>) -> Self {
+        match val {
+            Some(v) => Operand::Value(Value::new(row,col,v)),
+            None => Operand::Cell(Box::new(Cell::new((row,col))))
+        }
     }
-
-    pub fn new_value(row: usize, col: usize, val: T) -> Self {
-        Operand::Value(Value::new(row,col,val))
-    }
-
+    
     pub fn get_value(&self) -> &T {
         match self {
             Operand::Cell(cell) => &cell.value,
