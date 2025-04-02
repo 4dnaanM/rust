@@ -38,21 +38,19 @@ impl<T: From<i32>> Cell<T> {
 
 
 impl<T: From<i32>> Value<T> {
-    fn new_helper(coord: Coordinate, val: T) -> Self {
+    fn new<U: Into<Coordinate>>(input: U, val: T) -> Self {
+        let coordinate = input.into();
         Value {
-            coordinate:coord, 
+            coordinate:coordinate, 
             value: val
         }
-    }
-    fn new(row:usize, col:usize, val:T) -> Self {
-        Self::new_helper(Coordinate(row,col),val)
     }
 }
 
 impl<T: From<i32>> Operand<T> {
     pub fn new(row: usize, col: usize, val: Option<T>) -> Self {
         match val {
-            Some(v) => Operand::Value(Value::new(row,col,v)),
+            Some(v) => Operand::Value(Value::new((row,col),v)),
             None => Operand::Cell(Box::new(Cell::new((row,col))))
         }
     }
