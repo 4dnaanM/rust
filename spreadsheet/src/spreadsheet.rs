@@ -46,9 +46,9 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         Operand::get_equation(&(self.cells[row][col].borrow())).process_equation()
     }
 
-    fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize),usize>) {
+    fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize),i32>) {
         let op = self.cells[row][col].borrow(); 
-        *set.entry((row,col)).or_insert(0) += 1;
+        *set.entry((row,col)).or_insert(-1) += 1;
         for neighbor in op.get_downstream_neighbors().borrow().iter() {
             let neighbor_ref = neighbor.borrow();
             let coord = neighbor_ref.get_coordinate();
@@ -58,7 +58,7 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         }
     }
 
-    fn toposort(&self, mut in_degrees: HashMap<(usize,usize),usize>) -> Vec<(usize,usize)>{
+    fn toposort(&self, mut in_degrees: HashMap<(usize,usize),i32>) -> Vec<(usize,usize)>{
         let mut queue = Vec::new();
         let mut order = Vec::new();
 
@@ -94,7 +94,8 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         self.get_indegrees(row,col, &mut in_degrees);
         let order = self.toposort(in_degrees);
         for coord in order{
-            self.cells[coord.0][coord.1].borrow_mut().set_value(self.process_cell_equation(coord.0, coord.1));
+            let val = self.process_cell_equation(coord.0, coord.1);
+            self.cells[coord.0][coord.1].borrow_mut().set_value(val);
         }
     } 
 
@@ -112,6 +113,5 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         // do operation on cell
         
     }
-
     
 }
