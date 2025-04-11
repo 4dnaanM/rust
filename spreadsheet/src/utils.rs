@@ -5,7 +5,7 @@ impl From<(usize, usize)> for Coordinate {
         Coordinate(row, col)
     }
 }
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone, Copy)]
 pub enum Type {
     NUL,
     ADD, 

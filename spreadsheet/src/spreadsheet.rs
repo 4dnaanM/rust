@@ -1,28 +1,27 @@
 use crate::equation::Equation;
-use crate::utils::Type;
-use crate::operand::Operand;
+use crate::operand::{SharedOperand,Operand};
 
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Mul;
-use std::ops::Div;
+use std::ops::{Add,Sub,Mul,Div};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 // should expose set and get for cell value, and set for cell equation
 // all the traversal and updation methods should be defined here like findDownstream, toposort 
-pub struct SpreadSheet<'a,T> {
+pub struct SpreadSheet<T> {
     m: usize, 
     n: usize, 
-    cells: Vec<Vec<Operand<'a,T>>> 
+    cells: Vec<Vec<SharedOperand<T>>> 
+    
 }	
 
-impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> SpreadSheet<'a,T> {	
+impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> SpreadSheet<T> {	
     pub fn new(m: usize, n: usize) -> Self {
-        let mut cells = Vec::<Vec::<Operand<T>>>::with_capacity(m);
+        let mut cells = Vec::<Vec::<SharedOperand<T>>>::with_capacity(m);
 
         for i in 0..m {
-            let mut row = Vec::<Operand<T>>::with_capacity(n);
+            let mut row = Vec::<SharedOperand<T>>::with_capacity(n);
             for j in 0..n {
-                row.push(Operand::new(i, j, Some(T::from(0)),None));
+                row.push(Rc::new(RefCell::new(Operand::new(i, j, Some(T::from(0)),None))));
             }
             cells.push(row);
         }
@@ -31,33 +30,32 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
     }
     pub fn get_cell_value(&self, row:usize, col:usize) -> T{
         assert!(col < self.n && row < self.m,"get_cell_value: Invalid cell coordinates ({},{})", row, col);
-        Operand::get_value(&self.cells[row][col])
+        Operand::get_value(&(self.cells[row][col].borrow()))
     }
 
     pub fn set_cell_value(&mut self, row:usize, col:usize, val: T) {
         assert!(col < self.n && row < self.m,"set_cell_value: Invalid cell coordinates ({},{})", row, col);
         // remove earlier equation
-        Operand::set_value(&mut self.cells[row][col], val);
+        Operand::set_value(&mut (self.cells[row][col]).borrow_mut(), val);
     }
 
     fn process_cell_equation(&self, row:usize, col:usize) -> T{
         assert!(col < self.n && row < self.m,"process_cell_equation: Invalid cell coordinates ({},{})", row, col);
-        Operand::get_equation(&self.cells[row][col]).process_equation()
+        Operand::get_equation(&(self.cells[row][col].borrow())).process_equation()
     }
     
     pub fn set_cell_equation(
-        &mut self, row:usize, col:usize, eq: Equation<'a,T>
+        &mut self, row:usize, col:usize, eq: Equation<T>
     ) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
-        if !self.cells[row][col].is_cell() {
-            self.cells[row][col] = Operand::new(row, col, None, None);
-            self.cells[row][col].set_equation(eq);
-            return;
+        if !self.cells[row][col].borrow().is_cell() {
+            self.cells[row][col] = Rc::new(RefCell::new(Operand::new(row, col, None, None)));
         }
-
-        let old_equation = self.cells[row][col].get_equation();
         // remove earlier equation
         // put current equation
+        
+        self.cells[row][col].borrow_mut().set_equation(eq);
+        
     }
 
     

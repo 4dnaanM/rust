@@ -1,48 +1,80 @@
-use std::collections::HashSet;
-
 use crate::utils::Coordinate;
 use crate::equation::Equation;
 
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Mul;
-use std::ops::Div;
+use std::hash::{Hash, Hasher};
+
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use std::ops::{Add,Sub,Mul,Div};
 
 // cell and value are not meant to be public
-// callers should work only with operand
+// callers should work only with sharedoperand and operand
 
-struct Cell<'a,T> {
-    coordinate: Coordinate, 
-    value: T,
-    equation: Equation<'a,T>,
-    downstream_neighbors: HashSet<&'a Cell<'a,T>>
+#[derive(Eq, PartialEq, Clone)]
+struct Cell<T> {
+    pub coordinate: Coordinate,
+    pub value: T,
+    
+    // each cell owns its equation.
+    pub equation: Box<Equation<T>>,
+    // The equation contains references to other cells in its operands list 
+    // When the cell is dropped, the equation is dropped too
+    
+    // references to other cells that depend on this cell
+    pub downstream_neighbors: RefCell<Vec<SharedOperand<T>>>, // Can i use hashset here?
+    // when the cell is dropped, each reference in downstream neighbors is dropped, decreasing the ref count
 }
-
-struct Value<T> {
-    coordinate: Coordinate,
-    value: T
-} 
-
-pub enum Operand<'a,T> {
-    // it should own the cell or value
-    Cell(Cell<'a,T>), 
-    Value(Value<T>)
+impl<T> Hash for Cell<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.coordinate.hash(state);
+    }
 }
-
-impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Cell<'a,T> {
+impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Cell<T> {
     fn new<U: Into<Coordinate>>(input: U) -> Self {
         let coordinate = input.into();
         Cell {
             coordinate,
             value: T::from(0),
-            equation: Equation::new(coordinate,None, None),
-            downstream_neighbors: HashSet::new(),
+            equation: Box::new(Equation::new(coordinate, None, None)),
+            downstream_neighbors: RefCell::new(Vec::new()),
+        }
+    }
+
+    fn set_equation(&mut self, eq: Equation<T>) {
+        
+        // remove the old equation's links
+        for operand in self.equation.get_operands() {
+            if let Operand::Cell(ref neighbor) = *operand.borrow() {
+                let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
+                neighbors.retain(|x| *x.borrow().get_coordinate() != self.coordinate);
+            }
+        }
+
+        self.value = eq.process_equation();
+        
+        // I think the earlier equations should be deleted automatically when we set a new one
+        self.equation = Box::new(eq);
+        for operand in self.equation.get_operands() {
+            if let Operand::Cell(ref neighbor) = *operand.borrow() {
+                neighbor.downstream_neighbors.borrow_mut().push(Rc::new(RefCell::new(Operand::Cell(self.clone()))));
+            }
         }
     }
 }
 
 
 
+#[derive(Eq, PartialEq)]
+struct Value<T> {
+    coordinate: Coordinate,
+    value: T
+} 
+impl<T> Hash for Value<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.coordinate.hash(state);
+    }
+}
 impl<T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Value<T> {
     fn new<U: Into<Coordinate>>(input: U, val: T) -> Self {
         let coordinate = input.into();
@@ -53,8 +85,26 @@ impl<T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Out
     }
 }
 
-impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Operand<'a,T> {
-    pub fn new(row: usize, col: usize, val: Option<T>, eq: Option<Equation<'a,T>>) -> Self {
+
+
+#[derive(Eq, PartialEq)]
+pub enum Operand<T> {
+    // it should own the cell or value
+    Cell(Cell<T>), 
+    Value(Value<T>)
+}
+impl<T> Hash for Operand<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Operand::Cell(cell) => cell.hash(state),
+            Operand::Value(value) => value.hash(state)
+        }
+    }
+}
+
+impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Operand<T> {
+    
+    pub fn new(row: usize, col: usize, val: Option<T>, eq: Option<Equation<T>>) -> Self {
         match eq {
             Some(eq) => {
                 let mut c = Operand::Cell(Cell::new((row,col)));
@@ -78,9 +128,9 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         }
     }
 
-    pub fn get_equation(&self) -> &Equation<T> {
+    pub fn get_equation(&self) -> Equation<T> {
         match self {
-            Operand::Cell(cell) => &cell.equation,
+            Operand::Cell(cell) => (*cell.equation).clone(),
             Operand::Value(_) => panic!("Value does not have an equation")
         }
     }
@@ -99,20 +149,23 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         }
     }
 
-    pub fn set_equation(&mut self, eq: Equation<'a,T>){
+    pub fn set_equation(&mut self, eq: Equation<T>){
         match self {
             Operand::Cell(cell) => {
-                cell.value = eq.process_equation();
-                cell.equation = eq;
+                cell.set_equation(eq);
             },
             Operand::Value(_) => panic!("Value can't have an equation!")
         }
     }
 
-    pub fn is_cell(&mut self) -> bool {
+    pub fn is_cell(&self) -> bool {
         match self {
             Operand::Cell(_) => true,
             Operand::Value(_) => false
         }
     }
 }
+
+pub type SharedOperand<T> = Rc<RefCell<Operand<T>>>;
+// References to Operands that can be shared and also mutated
+// Solely to prevent duplication
