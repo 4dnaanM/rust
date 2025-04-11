@@ -1,1 +1,6 @@
 **/target
+control_flow/*
+custom_types/*
+guessing_game/*
+ownership/*
+quizwork/*
