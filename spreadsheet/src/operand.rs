@@ -65,7 +65,7 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
 
 
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 struct Value<T> {
     coordinate: Coordinate,
     value: T
@@ -87,7 +87,7 @@ impl<T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Out
 
 
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum Operand<T> {
     // it should own the cell or value
     Cell(Cell<T>), 
@@ -131,7 +131,14 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
     pub fn get_equation(&self) -> Equation<T> {
         match self {
             Operand::Cell(cell) => (*cell.equation).clone(),
-            Operand::Value(_) => panic!("Value does not have an equation")
+            Operand::Value(_) => panic!("Value does not have an equation!")
+        }
+    }
+
+    pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand<T>>> {
+        match self {
+            Operand::Cell(cell) => cell.downstream_neighbors.clone(),
+            Operand::Value(_) => panic!("Value does not have downstream neighbors!")
         }
     }
     
