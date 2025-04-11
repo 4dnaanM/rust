@@ -22,7 +22,7 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
         for i in 0..m {
             let mut row = Vec::<SharedOperand<T>>::with_capacity(n);
             for j in 0..n {
-                row.push(Rc::new(RefCell::new(Operand::new(i, j, Some(T::from(0)),None))));
+                row.push(Rc::new(RefCell::new(Operand::new((i, j), Some(T::from(0)),None))));
             }
             cells.push(row);
         }
@@ -104,7 +104,7 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
     ) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
         if !self.cells[row][col].borrow().is_cell() {
-            self.cells[row][col] = Rc::new(RefCell::new(Operand::new(row, col, None, None)));
+            self.cells[row][col] = Rc::new(RefCell::new(Operand::new((row, col), None, None)));
         }
         
         self.cells[row][col].borrow_mut().set_equation(eq);

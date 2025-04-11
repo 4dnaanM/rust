@@ -104,7 +104,9 @@ impl<T> Hash for Operand<T> {
 
 impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Operand<T> {
     
-    pub fn new(row: usize, col: usize, val: Option<T>, eq: Option<Equation<T>>) -> Self {
+    pub fn new<U : Into<Coordinate>>(input: U, val: Option<T>, eq: Option<Equation<T>>) -> Self {
+        let coord = input.into();
+        let (row,col) = (coord.0, coord.1);
         match eq {
             Some(eq) => {
                 let mut c = Operand::Cell(Cell::new((row,col)));

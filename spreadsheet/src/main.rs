@@ -18,11 +18,11 @@ fn main() {
 			let ops = vec![
 				SharedOperand::new(RefCell::new(
 					if row >=1 {spreadsheet.cells[row-1][col].borrow().clone()} 
-					else {Operand::new(row,col,Some((row+col).try_into().unwrap()),None)})
+					else {Operand::new((row,col),Some((row+col).try_into().unwrap()),None)})
 				),
 				SharedOperand::new(RefCell::new(
 					if col >=1 {spreadsheet.cells[row][col-1].borrow().clone()} 
-					else {Operand::new(row,col,Some((row+col).try_into().unwrap()),None)}))
+					else {Operand::new((row,col),Some((row+col).try_into().unwrap()),None)}))
 			];
 			let eq = Equation::new(Coordinate(row,col),Some(Type::ADD), Some(ops));
 			spreadsheet.set_cell_equation(row,col,eq);
@@ -31,15 +31,16 @@ fn main() {
 		println!("|");
 	}
 	println!("-----------------------------------------");
+	let to_change = Coordinate(5,5);
 	spreadsheet.set_cell_equation(
 		0,
 		0, 
 		Equation::new(
-			Coordinate(0,0), 
+			to_change, 
 			Some(Type::ADD), 
 			Some(vec![
-				SharedOperand::new(RefCell::new(Operand::new(0,0,Some(10), None))),
-				SharedOperand::new(RefCell::new(Operand::new(0,0,Some(10), None)))
+				SharedOperand::new(RefCell::new(Operand::new(to_change,Some(10), None))),
+				SharedOperand::new(RefCell::new(Operand::new(to_change,Some(10), None)))
 			])
 		)
 	);
