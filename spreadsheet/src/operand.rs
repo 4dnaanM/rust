@@ -40,28 +40,35 @@ impl Cell {
         }
     }
 
-    fn set_equation(&mut self, eq: Equation, cell_ref: SharedOperand) {
-        
+    fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand) {
+        print!("Cell: set_equation: ");
+        eq.print();
+        println!();
         // remove the old equation's links
+
         for operand in self.equation.get_operands() {
-            if let Operand::Cell(ref neighbor) = *operand.borrow() {
-                let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
-                assert!(neighbors.len() > 0, "Downstream neighbors should not be empty");
-                assert!(neighbors.contains(&cell_ref), "Cell reference should be in the downstream neighbors");
-                neighbors.retain(|x| x.borrow().get_coordinate() != cell_ref.borrow().get_coordinate());
+            // operand.borrow().print(); 
+            match *operand.borrow() {
+                Operand::Cell(ref neighbor) => {
+                    let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
+                    assert!(neighbors.contains(&self_ref), "Cell reference should be in the downstream neighbors");
+                    neighbors.retain(|x| x != &self_ref);
+                }
+                Operand::Value(_) => {}
             }
         }
-
+        println!("KADLKFJ");
         self.value = eq.process_equation();
         
         // I think the earlier equations should be deleted automatically when we set a new one
         self.equation = Box::new(eq);
         for operand in self.equation.get_operands() {
             if let Operand::Cell(ref neighbor) = *operand.borrow() {
-                neighbor.downstream_neighbors.borrow_mut().push(Rc::new(RefCell::new(Operand::Cell(self.clone()))));
+                neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
             }
         }
     }
+    
     fn print (&self) {
         print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
         self.equation.print();
@@ -164,13 +171,10 @@ impl Operand {
         }
     }
 
-    pub fn set_equation(&mut self, eq: Equation, cell_ref : SharedOperand) {
-        print!("Op: set_equation: ");
-        eq.print(); 
-        println!();
+    pub fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand) {
         match self {
             Operand::Cell(cell) => {
-                cell.set_equation(eq,cell_ref);
+                cell.set_equation(eq,self_ref);
             },
             Operand::Value(_) => panic!("Value can't have an equation!")
         }

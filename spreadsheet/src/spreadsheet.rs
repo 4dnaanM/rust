@@ -91,6 +91,8 @@ impl SpreadSheet {
     }
     
     fn do_operation(&mut self, row: usize, col: usize){
+        print!("do_operation: ");
+        self.cells[row][col].borrow().print();
         // get all the affected cells and indegrees
         let mut in_degrees = HashMap::new();
         self.get_indegrees(row,col, &mut in_degrees);
@@ -105,24 +107,21 @@ impl SpreadSheet {
         }
     } 
 
-    pub fn set_cell_equation(
-        &mut self, row:usize, col:usize, eq: Equation
-    ) {
+    pub fn set_cell_equation(&mut self, row:usize, col:usize, eq: Equation) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
         
-        let mut op_ref = self.cells[row][col].clone();
-        if !(op_ref.borrow().is_cell()) {
+        if !(self.cells[row][col].borrow().is_cell()) {
             print!("Convert to a cell before setting equation: ");
-            op_ref.borrow().print(); 
+            self.cells[row][col].borrow().print(); 
             self.cells[row][col] = Rc::new(RefCell::new(Operand::new(Some((row, col)), None)));
-            op_ref = self.cells[row][col].clone();
-            op_ref.borrow().print(); 
         }
-        op_ref.borrow_mut().set_equation(eq,op_ref.clone());
-        println!("H");
-        self.do_operation(row, col);
+        self.cells[row][col].borrow().print(); 
 
-        // do operation on cell
+        // self.cells[row][col].borrow_mut().set_equation(eq);
+        let cell_ref = self.cells[row][col].clone();
+        cell_ref.borrow_mut().set_equation(eq, cell_ref.clone());
+
+        self.do_operation(row, col);
         
     }
     
