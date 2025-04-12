@@ -13,3 +13,15 @@ pub enum Type {
     MUL, 
     DIV
 }
+
+impl Type {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Type::ADD => "ADD",
+            Type::SUB => "SUB",
+            Type::MUL => "MUL",
+            Type::DIV => "DIV",
+            Type::NUL => "NUL",
+        }
+    }
+}

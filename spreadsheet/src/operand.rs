@@ -6,48 +6,49 @@ use std::hash::{Hash, Hasher};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use std::ops::{Add,Sub,Mul,Div};
 
 // cell and value are not meant to be public
 // callers should work only with sharedoperand and operand
 
 #[derive(Eq, PartialEq, Clone)]
-struct Cell<T> {
+struct Cell {
     pub coordinate: Coordinate,
-    pub value: T,
+    pub value: i32,
     
     // each cell owns its equation.
-    pub equation: Box<Equation<T>>,
+    pub equation: Box<Equation>,
     // The equation contains references to other cells in its operands list 
     // When the cell is dropped, the equation is dropped too
     
     // references to other cells that depend on this cell
-    pub downstream_neighbors: RefCell<Vec<SharedOperand<T>>>, // Can i use hashset here?
+    pub downstream_neighbors: RefCell<Vec<SharedOperand>>, // Can i use hashset here?
     // when the cell is dropped, each reference in downstream neighbors is dropped, decreasing the ref count
 }
-impl<T> Hash for Cell<T> {
+impl Hash for Cell {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.coordinate.hash(state);
     }
 }
-impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Cell<T> {
+impl Cell {
     fn new<U: Into<Coordinate>>(input: U) -> Self {
         let coordinate = input.into();
         Cell {
             coordinate,
-            value: T::from(0),
+            value: 0,
             equation: Box::new(Equation::new(coordinate, None, None)),
             downstream_neighbors: RefCell::new(Vec::new()),
         }
     }
 
-    fn set_equation(&mut self, eq: Equation<T>) {
+    fn set_equation(&mut self, eq: Equation, cell_ref: SharedOperand) {
         
         // remove the old equation's links
         for operand in self.equation.get_operands() {
             if let Operand::Cell(ref neighbor) = *operand.borrow() {
                 let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
-                neighbors.retain(|x| *x.borrow().get_coordinate() != self.coordinate);
+                assert!(neighbors.len() > 0, "Downstream neighbors should not be empty");
+                assert!(neighbors.contains(&cell_ref), "Cell reference should be in the downstream neighbors");
+                neighbors.retain(|x| x.borrow().get_coordinate() != cell_ref.borrow().get_coordinate());
             }
         }
 
@@ -61,39 +62,45 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
             }
         }
     }
-}
-
-
-
-#[derive(Eq, PartialEq, Clone)]
-struct Value<T> {
-    coordinate: Coordinate,
-    value: T
-} 
-impl<T> Hash for Value<T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.coordinate.hash(state);
+    fn print (&self) {
+        print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
+        self.equation.print();
+        print!(", Downstream Neighbors: [");
+        for neighbor in self.downstream_neighbors.borrow().iter() {
+            let neighbor = neighbor.borrow();
+            let coord = neighbor.get_coordinate();
+            print!("({},{}),",coord.0,coord.1);
+        }
+        println!("]");
     }
 }
-impl<T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Value<T> {
-    fn new<U: Into<Coordinate>>(input: U, val: T) -> Self {
-        let coordinate = input.into();
+
+
+
+#[derive(Eq, PartialEq, Clone, Hash)]
+struct Value {
+    value: i32
+} 
+impl Value {
+    fn new(val: i32) -> Self {
         Value {
-            coordinate:coordinate, 
             value: val
         }
     }
+    fn print (&self) {
+        println!("V->{}",self.value);
+    }
 }
 
 
 
 #[derive(Eq, PartialEq, Clone)]
-pub enum Operand<T> {
+pub enum Operand {
     // it should own the cell or value
-    Cell(Cell<T>), 
-    Value(Value<T>)
+    Cell(Cell), 
+    Value(Value)
 }
-impl<T> Hash for Operand<T> {
+impl Hash for Operand {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Operand::Cell(cell) => cell.hash(state),
@@ -102,42 +109,41 @@ impl<T> Hash for Operand<T> {
     }
 }
 
-impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>> Operand<T> {
+impl Operand {
     
-    pub fn new<U : Into<Coordinate>>(input: U, val: Option<T>, eq: Option<Equation<T>>) -> Self {
-        let coord = input.into();
-        let (row,col) = (coord.0, coord.1);
-        match eq {
-            Some(eq) => {
-                let mut c = Operand::Cell(Cell::new((row,col)));
-                c.set_equation(eq);
-                c
-            },
+    pub fn new<U : Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
+        match val {
+            Some(v) => Operand::Value(Value::new(v)),
             None => {
-                match val {
-                    Some(v) => Operand::Value(Value::new((row,col),v)),
-                    None => Operand::Cell(Cell::new((row,col)))
-                }
+                let coord = input.unwrap().into();
+                let (row,col) = (coord.0, coord.1);
+                Operand::Cell(Cell::new((row,col)))
             }
         }
+    }
         
+    pub fn print (&self) {
+        match self {
+            Operand::Cell(cell) => cell.print(),
+            Operand::Value(value) => value.print()
+        }
     }
     
-    pub fn get_value(&self) -> T {
+    pub fn get_value(&self) -> i32 {
         match self {
             Operand::Cell(cell) => cell.value,
             Operand::Value(val) => val.value
         }
     }
 
-    pub fn get_equation(&self) -> Equation<T> {
+    pub fn get_equation(&self) -> Equation {
         match self {
             Operand::Cell(cell) => (*cell.equation).clone(),
             Operand::Value(_) => panic!("Value does not have an equation!")
         }
     }
 
-    pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand<T>>> {
+    pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand>> {
         match self {
             Operand::Cell(cell) => cell.downstream_neighbors.clone(),
             Operand::Value(_) => panic!("Value does not have downstream neighbors!")
@@ -147,21 +153,24 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
     pub fn get_coordinate(&self) -> &Coordinate {
         match self {
             Operand::Cell(cell) => &cell.coordinate,
-            Operand::Value(val) => &val.coordinate
+            Operand::Value(_) => panic!("Value does not have a coordinate!")
         }
     }
 
-    pub fn set_value(&mut self, val: T) {
+    pub fn set_value(&mut self, val: i32) {
         match self {
             Operand::Cell(cell) => cell.value = val,
             Operand::Value(value) => value.value = val
         }
     }
 
-    pub fn set_equation(&mut self, eq: Equation<T>){
+    pub fn set_equation(&mut self, eq: Equation, cell_ref : SharedOperand) {
+        print!("Op: set_equation: ");
+        eq.print(); 
+        println!();
         match self {
             Operand::Cell(cell) => {
-                cell.set_equation(eq);
+                cell.set_equation(eq,cell_ref);
             },
             Operand::Value(_) => panic!("Value can't have an equation!")
         }
@@ -175,6 +184,6 @@ impl<'a,T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,
     }
 }
 
-pub type SharedOperand<T> = Rc<RefCell<Operand<T>>>;
+pub type SharedOperand = Rc<RefCell<Operand>>;
 // References to Operands that can be shared and also mutated
 // Solely to prevent duplication

@@ -3,32 +3,29 @@ use super::operand::SharedOperand;
 use super::utils::Coordinate;
 
 use std::hash::{Hash, Hasher};
-use std::ops::{Add,Sub,Mul,Div};
 
 #[derive(Eq, PartialEq, Clone)]
-pub struct Equation<T> {
+pub struct Equation {
     coordinate: Coordinate,
     t: Type,
     
     // each equation should own its list of operands. When equation changes for a cell, construct a whole new one
-    operands: Vec<SharedOperand<T>>, // References to operands
-    // when the equation is dropped, each reference is droped, decreasing the ref count
+    operands: Vec<SharedOperand>, // References to operands
+    // when the equation is dropped, each reference is dropped, decreasing the ref count
 }
-
-impl<T> Hash for Equation<T> {
+impl Hash for Equation {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.coordinate.hash(state);
     }
 }
 
 
-impl <T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T>>
-    Equation<T> {
-    pub fn new(coordinate: Coordinate, t: Option<Type>, operands: Option<Vec<SharedOperand<T>>>) -> Self {
+impl Equation {
+    pub fn new(coordinate: Coordinate, t: Option<Type>, operands: Option<Vec<SharedOperand>>) -> Self {
         
         let t = t.unwrap_or(Type::NUL);
         let operands = if t == Type::NUL {
-            Vec::<SharedOperand<T>>::new()
+            Vec::<SharedOperand>::new()
         } else {
             operands.expect("Operands cannot be None when Type is not NUL")
         };
@@ -40,12 +37,34 @@ impl <T: Clone + Copy + From<i32> + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Ou
         }
     }
 
-    
-    pub fn get_operands(&self) -> &Vec<SharedOperand<T>> {
+    pub fn print(&self){
+        if self.t!=Type::NUL {
+            let coord0 = self.operands[0].borrow();
+            let coord1 = self.operands[1].borrow();
+
+            let str0 = if coord0.is_cell() {
+                format!("({},{})", coord0.get_coordinate().0, coord0.get_coordinate().1)
+            } else {
+                format!("{}", coord0.get_value())
+            };
+
+            let str1 = if coord1.is_cell() {
+                format!("({},{})", coord1.get_coordinate().0, coord1.get_coordinate().1)
+            } else {
+                format!("{}", coord1.get_value())
+            };
+
+            print!("Equation: {} {} {}", str0, self.t.to_str(), str1);
+        }
+        else {
+            print!("Equation: ({},{}) NUL",self.coordinate.0,self.coordinate.1);
+        }   
+    }   
+    pub fn get_operands(&self) -> &Vec<SharedOperand> {
         &self.operands
     }
 
-    pub fn process_equation(&self) -> T {
+    pub fn process_equation(&self) -> i32 {
         let t = self.t;
         let operands = &self.operands;
         match t{
