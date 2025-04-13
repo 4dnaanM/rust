@@ -61,6 +61,14 @@ impl Equation {
                 assert!(operands.len() == 2, "DIV operation requires exactly 2 operands");
                 operands[0].borrow().get_value() / operands[1].borrow().get_value()
             }
+            Type::MIN => {
+                assert!(operands.len() == 2, "MIN operation requires exactly 2 operands");
+                operands[0].borrow().get_value().min(operands[1].borrow().get_value())
+            }
+            Type::MAX => {
+                assert!(operands.len() == 2, "MAX operation requires exactly 2 operands");
+                operands[0].borrow().get_value().max(operands[1].borrow().get_value())
+            }
             _ => {
                 panic!("Unsupported operation to process equation");
             }

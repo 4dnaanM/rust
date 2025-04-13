@@ -11,7 +11,9 @@ pub enum Type {
     ADD, 
     SUB, 
     MUL, 
-    DIV
+    DIV,
+    MIN, 
+    MAX
 }
 
 impl Type {
@@ -22,6 +24,8 @@ impl Type {
             Type::MUL => "MUL",
             Type::DIV => "DIV",
             Type::NUL => "NUL",
+            Type::MIN => "MIN",
+            Type::MAX => "MAX"
         }
     }
 }

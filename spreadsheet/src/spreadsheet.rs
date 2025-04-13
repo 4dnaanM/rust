@@ -33,13 +33,6 @@ impl SpreadSheet {
         Operand::get_value(&(self.cells[row][col].borrow()))
     }
 
-    // fn set_cell_value(&mut self, row:usize, col:usize, val: T) {
-    //     assert!(col < self.n && row < self.m,"set_cell_value: Invalid cell coordinates ({},{})", row, col);
-    //     // remove earlier equation
-    //     Operand::set_value(&mut (self.cells[row][col]).borrow_mut(), val);
-    //     self.do_operation(row, col);
-    // }
-
     fn process_cell_equation(&self, row:usize, col:usize) -> i32{
         assert!(col < self.n && row < self.m,"process_cell_equation: Invalid cell coordinates ({},{})", row, col);
         Operand::get_equation(&(self.cells[row][col].borrow())).process_equation()
@@ -126,9 +119,9 @@ impl SpreadSheet {
     pub fn set_cell_equation(&mut self, row:usize, col:usize, eq: Equation) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
 
-        print!("New equation: ");
-        eq.print();
-        println!();
+        // print!("New equation: ");
+        // eq.print();
+        // println!();
         
         if !(self.cells[row][col].borrow().is_cell()) {
             // print!("Convert to a cell before setting equation: ");
@@ -144,11 +137,12 @@ impl SpreadSheet {
 
         if !self.do_operation(row, col) {
             {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone());}
-            println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
-            print!("Old equation: ");
-            cell_ref.borrow_mut().get_equation().print();
-            println!();
+            // println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
+            // print!("Old equation: ");
+            // cell_ref.borrow_mut().get_equation().print();
+            // println!();
         };
+
         
     }
 
