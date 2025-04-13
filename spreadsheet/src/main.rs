@@ -47,4 +47,21 @@ fn main() {
 	);
 	spreadsheet.print();
 
+	spreadsheet.set_cell_equation(
+		3,
+		3, 
+		Equation::new(
+			to_change, 
+			Some(Type::ADD), 
+			Some(vec![
+				// spreadsheet.cells[0][0].clone(),
+				spreadsheet.cells[3][4].clone(),
+				// SharedOperand::new(RefCell::new(Operand::new(Some(to_change),Some(10)))),
+				SharedOperand::new(RefCell::new(Operand::new(Some(to_change),Some(10))))
+			])
+		)
+	);
+
+	spreadsheet.print();
+
 }

@@ -63,7 +63,7 @@ impl SpreadSheet {
         // op.print();
     }
 
-    fn toposort(&self, mut in_degrees: HashMap<(usize,usize),i32>) -> Vec<(usize,usize)>{
+    fn toposort(&self, mut in_degrees: HashMap<(usize,usize),i32>) -> Option<Vec<(usize,usize)>>{
         let mut queue = Vec::new();
         let mut order = Vec::new();
 
@@ -91,10 +91,14 @@ impl SpreadSheet {
             }
         }
 
-        order
+        if in_degrees.len() != order.len() {
+            return None; 
+        }
+
+        Some(order)
     }
     
-    fn do_operation(&mut self, row: usize, col: usize){
+    fn do_operation(&mut self, row: usize, col: usize) -> bool{
         // print!("do_operation: ");
         // self.cells[row][col].borrow().print();
         // get all the affected cells and indegrees
@@ -104,16 +108,27 @@ impl SpreadSheet {
 
         //use indegrees to find toposort
         let order = self.toposort(in_degrees);
+        if order.is_none() {
+            println!("do_operation: Cycle detected in the equation");
+            return false;
+        }
+        let order = order.unwrap();
 
         // for each cell in the order, process the equation and set the value
         for coord in order{
             let val = self.process_cell_equation(coord.0, coord.1);
             self.cells[coord.0][coord.1].borrow_mut().set_value(val);
         }
+        
+        return true;
     } 
 
     pub fn set_cell_equation(&mut self, row:usize, col:usize, eq: Equation) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
+
+        print!("New equation: ");
+        eq.print();
+        println!();
         
         if !(self.cells[row][col].borrow().is_cell()) {
             // print!("Convert to a cell before setting equation: ");
@@ -124,9 +139,16 @@ impl SpreadSheet {
 
         // self.cells[row][col].borrow_mut().set_equation(eq);
         let cell_ref = self.cells[row][col].clone();
+        let old_eq = cell_ref.borrow().get_equation();
         cell_ref.borrow_mut().set_equation(eq, cell_ref.clone());
 
-        self.do_operation(row, col);
+        if !self.do_operation(row, col) {
+            {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone());}
+            println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
+            print!("Old equation: ");
+            cell_ref.borrow_mut().get_equation().print();
+            println!();
+        };
         
     }
 
