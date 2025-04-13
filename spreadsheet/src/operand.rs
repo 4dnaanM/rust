@@ -41,32 +41,30 @@ impl Cell {
     }
 
     fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand) {
-        print!("Cell: set_equation: ");
-        eq.print();
-        println!();
-        // remove the old equation's links
-
-        for operand in self.equation.get_operands() {
-            // operand.borrow().print(); 
-            match *operand.borrow() {
-                Operand::Cell(ref neighbor) => {
-                    let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
-                    assert!(neighbors.contains(&self_ref), "Cell reference should be in the downstream neighbors");
-                    neighbors.retain(|x| x != &self_ref);
-                }
-                Operand::Value(_) => {}
+        // println!("Cell: set_equation: ");
+        // eq.print();
+        // println!();
+    
+        let old_operands = self.equation.get_operands().clone();
+    
+        for operand in old_operands {
+            if let Operand::Cell(ref neighbor) = *operand.borrow() {
+                let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
+                neighbors.retain(|x| !Rc::ptr_eq(x, &self_ref));
             }
         }
-        println!("KADLKFJ");
+    
         self.value = eq.process_equation();
-        
-        // I think the earlier equations should be deleted automatically when we set a new one
+    
         self.equation = Box::new(eq);
-        for operand in self.equation.get_operands() {
+    
+        let new_operands = self.equation.get_operands().clone();
+        for operand in new_operands {
             if let Operand::Cell(ref neighbor) = *operand.borrow() {
                 neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
             }
         }
+    
     }
     
     fn print (&self) {

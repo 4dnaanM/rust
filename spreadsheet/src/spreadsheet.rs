@@ -46,10 +46,12 @@ impl SpreadSheet {
     }
 
     fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize),i32>) {
+        if set.contains_key(&(row,col)) {
+            set.entry((row,col)).and_modify(|e| *e += 1);
+            return;
+        }
+        set.insert((row, col), if set.is_empty() { 0 } else { 1 });
         let op = self.cells[row][col].borrow(); 
-        *set.entry((row,col)).or_insert(-1) += 1;
-        print!("get_indegrees: Set: {:?}, ",set);
-        op.print();
         for neighbor in op.get_downstream_neighbors().borrow().iter() {
             let neighbor_ref = neighbor.borrow();
             let coord = neighbor_ref.get_coordinate();
@@ -57,6 +59,8 @@ impl SpreadSheet {
             let c = coord.1;
             self.get_indegrees(r, c, set);
         }
+        // print!("get_indegrees: Set: {:?}, ",set);
+        // op.print();
     }
 
     fn toposort(&self, mut in_degrees: HashMap<(usize,usize),i32>) -> Vec<(usize,usize)>{
@@ -91,11 +95,12 @@ impl SpreadSheet {
     }
     
     fn do_operation(&mut self, row: usize, col: usize){
-        print!("do_operation: ");
-        self.cells[row][col].borrow().print();
+        // print!("do_operation: ");
+        // self.cells[row][col].borrow().print();
         // get all the affected cells and indegrees
         let mut in_degrees = HashMap::new();
         self.get_indegrees(row,col, &mut in_degrees);
+        // print!("do_operation: In degrees: {:?}\n", in_degrees);
 
         //use indegrees to find toposort
         let order = self.toposort(in_degrees);
@@ -111,11 +116,11 @@ impl SpreadSheet {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
         
         if !(self.cells[row][col].borrow().is_cell()) {
-            print!("Convert to a cell before setting equation: ");
-            self.cells[row][col].borrow().print(); 
+            // print!("Convert to a cell before setting equation: ");
+            // self.cells[row][col].borrow().print(); 
             self.cells[row][col] = Rc::new(RefCell::new(Operand::new(Some((row, col)), None)));
         }
-        self.cells[row][col].borrow().print(); 
+        // self.cells[row][col].borrow().print(); 
 
         // self.cells[row][col].borrow_mut().set_equation(eq);
         let cell_ref = self.cells[row][col].clone();
@@ -123,6 +128,17 @@ impl SpreadSheet {
 
         self.do_operation(row, col);
         
+    }
+
+    pub fn print(&self) {
+        println!("----------------------------------------------------------------------");
+        for row in 0..self.m {
+            for col in 0..self.n {
+                print!("|{:6}", self.get_cell_value(row, col));
+            }
+            println!("|");
+        }
+        println!("----------------------------------------------------------------------");
     }
     
 }
