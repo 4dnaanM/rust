@@ -2,10 +2,9 @@ use crate::utils::Coordinate;
 use crate::equation::Equation;
 
 use std::hash::{Hash, Hasher};
-
-use std::cell::RefCell;
+use std::cell::{RefCell, Ref, RefMut};
 use std::rc::Rc;
-
+use std::collections::HashSet;
 
 // cell and value are not meant to be public
 // callers should work only with sharedoperand and operand
@@ -21,7 +20,7 @@ struct Cell {
     // When the cell is dropped, the equation is dropped too
     
     // references to other cells that depend on this cell
-    pub downstream_neighbors: RefCell<Vec<SharedOperand>>, // Can i use hashset here?
+    pub downstream_neighbors: RefCell<HashSet<SharedOperand>>, // Can i use hashset here?
     // when the cell is dropped, each reference in downstream neighbors is dropped, decreasing the ref count
 }
 impl Hash for Cell {
@@ -36,7 +35,7 @@ impl Cell {
             coordinate,
             value: 0,
             equation: Box::new(Equation::new(coordinate, None, None)),
-            downstream_neighbors: RefCell::new(Vec::new()),
+            downstream_neighbors: RefCell::new(HashSet::<SharedOperand>::new()),
         }
     }
 
@@ -50,7 +49,8 @@ impl Cell {
         for operand in old_operands {
             if let Operand::Cell(ref neighbor) = *operand.borrow() {
                 let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
-                neighbors.retain(|x| !Rc::ptr_eq(x, &self_ref));
+                // neighbors.retain(|x| !Rc::ptr_eq(x, &self_ref));
+                neighbors.remove(&self_ref);
             }
         }
     
@@ -61,7 +61,8 @@ impl Cell {
         let new_operands = self.equation.get_operands().clone();
         for operand in new_operands {
             if let Operand::Cell(ref neighbor) = *operand.borrow() {
-                neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                // neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                neighbor.downstream_neighbors.borrow_mut().insert(self_ref.clone());
             }
         }
     
@@ -148,7 +149,7 @@ impl Operand {
         }
     }
 
-    pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand>> {
+    pub fn get_downstream_neighbors(&self) -> RefCell<HashSet<SharedOperand>> {
         match self {
             Operand::Cell(cell) => cell.downstream_neighbors.clone(),
             Operand::Value(_) => panic!("Value does not have downstream neighbors!")
@@ -186,6 +187,30 @@ impl Operand {
     }
 }
 
-pub type SharedOperand = Rc<RefCell<Operand>>;
+
+#[derive(Eq, PartialEq, Clone)]
+pub struct SharedOperand(pub Rc<RefCell<Operand>>);
+impl Hash for SharedOperand {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Rc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl SharedOperand {
+    pub fn new(op: Operand) -> Self {
+        SharedOperand(Rc::new(RefCell::new(op)))
+    }
+    pub fn borrow(&self) -> Ref<Operand> {
+        self.0.borrow()
+    }
+    pub fn borrow_mut(&self) -> RefMut<Operand> {
+        self.0.borrow_mut()
+    }
+    pub fn clone(&self) -> SharedOperand {
+        SharedOperand(self.0.clone())
+    }
+}
+
 // References to Operands that can be shared and also mutated
 // Solely to prevent duplication

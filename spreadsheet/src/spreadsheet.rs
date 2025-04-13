@@ -1,8 +1,6 @@
 use crate::equation::Equation;
 use crate::operand::{SharedOperand,Operand};
 
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::collections::HashMap;
 
 // should expose set and get for cell value, and set for cell equation
@@ -21,7 +19,7 @@ impl SpreadSheet {
         for i in 0..m {
             let mut row = Vec::<SharedOperand>::with_capacity(n);
             for j in 0..n {
-                row.push(Rc::new(RefCell::new(Operand::new(Some((i, j)), Some(0)))));
+                row.push(SharedOperand::new(Operand::new(Some((i, j)), Some(0))));
             }
             cells.push(row);
         }
@@ -126,7 +124,7 @@ impl SpreadSheet {
         if !(self.cells[row][col].borrow().is_cell()) {
             // print!("Convert to a cell before setting equation: ");
             // self.cells[row][col].borrow().print(); 
-            self.cells[row][col] = Rc::new(RefCell::new(Operand::new(Some((row, col)), None)));
+            self.cells[row][col] = SharedOperand::new(Operand::new(Some((row, col)), None));
         }
         // self.cells[row][col].borrow().print(); 
 
