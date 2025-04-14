@@ -9,7 +9,7 @@ use crate::parser::error::Error;
 
 pub fn parse_cmd(user_command: &str) -> Result<Command, Error> {
     
-    let ui_command: String = String::from(r"^(?P<UI_COMMAND>w|d|a|s|q)$");
+    let ui_command: String = String::from(r"^(?P<UI_COMMAND>w|d|a|s|q|(enable_output)|(disable_output))$");
     let cell: String = String::from(r"[A-Z]+[0-9]+");
     let constant: String = String::from(r"(-)?[0-9]+");
     let operator: String = String::from(r"(\+|\-|\*|\/)");
