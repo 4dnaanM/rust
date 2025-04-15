@@ -122,7 +122,7 @@ pub fn parse_cmd(user_command: &str) -> Result<Command, Error> {
             return Ok(Command::ArithmeticCommand(cmd));            
         }
     }
-    
+
     // The command does not match the regex. Therefore, invalid command
     return Err(Error::InvalidInput("Invalid user input".to_string()));
 }
@@ -155,6 +155,13 @@ mod tests {
     #[test]
     fn test_arithmetic_command_with_operator() {
         let input = "A1 = B1 + 3";
+        let result = parse_cmd(input);
+        assert!(matches!(result, Ok(Command::ArithmeticCommand(_))));
+    }
+
+    #[test]
+    fn test_arithmetic_command_with_two_cell_operands() {
+        let input = "A1 = B1 + A1";
         let result = parse_cmd(input);
         assert!(matches!(result, Ok(Command::ArithmeticCommand(_))));
     }
