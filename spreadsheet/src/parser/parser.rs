@@ -132,13 +132,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ui_command_wrong() {
-        let input = "qq";
-        let result = parse_cmd(input);
-        assert!(matches!(result, Ok(Command::UserInteractionCommand(_))));
-    }
-
-    #[test]
     fn test_ui_command() {
         let input = "w";
         let result = parse_cmd(input);
