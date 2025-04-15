@@ -36,7 +36,7 @@ pub fn main() {
 
     let mut spreadsheet = SpreadSheet::new(m,n);
 
-    parser::print_output::print_sheet(1, 1, m, n);
+    parser::print_output::print_sheet(1, 1, &spreadsheet, m, n);
     print!("[0.0] (ok) > ");
     io::stdout().flush().unwrap();
     let mut enable_output = true;

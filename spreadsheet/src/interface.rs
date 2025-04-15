@@ -17,10 +17,10 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
     };
     match command {
         Command::RangeCommand(cmd) => {
-
+            
         },
         Command::ArithmeticCommand(cmd) => {
-            std::thread::sleep(std::time::Duration::from_secs(2));
+            
         },
         Command::UserInteractionCommand(cmd) => {
             let ui_command = cmd.command.clone();
@@ -38,7 +38,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                         } else {
                             *row = 1;
                         }
-                        print_sheet(*row , *col, *max_rows, *max_cols);
+                        print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                     }
                 },
                 "a" => {
@@ -48,19 +48,19 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                         } else {
                             *col = 1;
                         };
-                        print_sheet(*row , *col, *max_rows, *max_cols);
+                        print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                     }
                 },
                 "s" => {
                     if *enable_output {
                         *row = ((*row) + 10).min(*max_rows);
-                        print_sheet(*row , *col, *max_rows, *max_cols);
+                        print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                     }
                 },
                 "d" => {
                     if *enable_output {
                         *col = ((*col) + 10).min(*max_cols);
-                        print_sheet(*row , *col, *max_rows, *max_cols);
+                        print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                     }
                 },
                 "q" => {

@@ -1,3 +1,5 @@
+use crate::spreadsheet::SpreadSheet;
+
 /// Converts the column string to column number using 1-indexing
 fn column_number_to_letters(mut col: usize) -> String {
     let mut letters = String::new();
@@ -10,7 +12,7 @@ fn column_number_to_letters(mut col: usize) -> String {
 }
 
 /// Prints a 10x10 grid with (start_row, start_col as the top-left cell)
-pub fn print_sheet(start_row: usize, start_col: usize, max_rows: usize, max_cols: usize) {
+pub fn print_sheet(start_row: usize, start_col: usize, spreadsheet: &SpreadSheet, max_rows: usize, max_cols: usize) {
     print!("\t");
     for col in start_col..(start_col + 10).min(max_cols+1) {
         print!("{}\t", column_number_to_letters(col));
@@ -19,8 +21,8 @@ pub fn print_sheet(start_row: usize, start_col: usize, max_rows: usize, max_cols
 
     for row in start_row..(start_row + 10).min(max_rows+1) {
         print!("{}\t", row);
-        for _col in start_col..(start_col + 10).min(max_cols+1) {
-            let value = 1000;
+        for col in start_col..(start_col + 10).min(max_cols+1) {
+            let value = spreadsheet.get_cell_value(row-1, col-1);
             print!("{}\t", value);
         }
         println!();
