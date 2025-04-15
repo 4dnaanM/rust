@@ -1,3 +1,4 @@
+use crate::spreadsheet::SpreadSheet;
 use crate::utils::Coordinate;
 use crate::equation::Equation;
 
@@ -41,7 +42,7 @@ impl Cell {
         }
     }
 
-    fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand) {
+    fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand, spreadsheet_ref: &SpreadSheet) {
         // println!("Cell: set_equation: ");
         // eq.print();
         // println!();
@@ -56,7 +57,7 @@ impl Cell {
             }
         }
     
-        self.value = eq.process_equation();
+        self.value = eq.process_equation(spreadsheet_ref);
     
         self.equation = Box::new(eq);
     
@@ -175,10 +176,10 @@ impl Operand {
         }
     }
 
-    pub fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand) {
+    pub fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand, spreadsheet_ref: &SpreadSheet) {
         match self {
             Operand::Cell(cell) => {
-                cell.set_equation(eq,self_ref);
+                cell.set_equation(eq,self_ref,spreadsheet_ref);
             },
             Operand::Value(_) => panic!("Value can't have an equation!")
         }

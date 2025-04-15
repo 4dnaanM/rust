@@ -1,6 +1,7 @@
 use super::utils::Type;
 use super::operand::SharedOperand;
 use super::utils::Coordinate;
+use super::spreadsheet::SpreadSheet;
 
 use std::hash::{Hash, Hasher};
 
@@ -41,34 +42,65 @@ impl Equation {
         &self.operands
     }
 
-    pub fn process_equation(&self) -> i32 {
+    pub fn process_equation(&self, spreadsheet_ref: &SpreadSheet) -> i32 {
         let t = self.t;
         let operands = &self.operands;
+        assert!(operands.len() <= 2, "Equation must have 2 operands");
+        let y1 = operands[0].borrow().get_coordinate().0;
+        let x1 = operands[0].borrow().get_coordinate().1;
+        let y2 = operands[1].borrow().get_coordinate().0;
+        let x2 = operands[1].borrow().get_coordinate().1;
+        let v1 = operands[0].borrow().get_value();
+        let v2 = operands[0].borrow().get_value();
         match t{
-            Type::ADD => {
-                assert!(operands.len() == 2, "ADD operation requires exactly 2 operands");
-                operands[0].borrow().get_value() + operands[1].borrow().get_value()
-            }
-            Type::SUB => {
-                assert!(operands.len() == 2, "SUB operation requires exactly 2 operands");
-                operands[0].borrow().get_value() - operands[1].borrow().get_value()
-            }
-            Type::MUL => {
-                assert!(operands.len() == 2, "MUL operation requires exactly 2 operands");
-                operands[0].borrow().get_value() * operands[1].borrow().get_value()
-            }
-            Type::DIV => {
-                assert!(operands.len() == 2, "DIV operation requires exactly 2 operands");
-                operands[0].borrow().get_value() / operands[1].borrow().get_value()
-            }
-            Type::MIN => {
-                assert!(operands.len() == 2, "MIN operation requires exactly 2 operands");
-                operands[0].borrow().get_value().min(operands[1].borrow().get_value())
-            }
-            Type::MAX => {
-                assert!(operands.len() == 2, "MAX operation requires exactly 2 operands");
-                operands[0].borrow().get_value().max(operands[1].borrow().get_value())
-            }
+            Type::ADD => v1 + v2,
+            Type::SUB => v1 - v2,
+            Type::MUL => v1 * v2,
+            Type::DIV => v1 / v2,
+            Type::MIN => v1.min(v2),
+            Type::MAX => v1.max(v1),
+
+            Type::SUM => {
+                
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut sum = 0; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        sum += spreadsheet_ref.get_cell_value(y,x);
+                    }
+                }
+                sum
+            },
+            Type::AVG => {
+
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let count = ((y2-y1+1)*(x2-x1+1)) as i32;
+                let mut sum = 0; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        sum += spreadsheet_ref.get_cell_value(y,x);
+                    }
+                }
+                sum/count
+            },
+            Type::DEV => {
+
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let count = ((y2-y1+1)*(x2-x1+1)) as i32;
+                let mut sum = 0; 
+                let mut sq = 0;
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        sum += spreadsheet_ref.get_cell_value(y,x);
+                        sq += spreadsheet_ref.get_cell_value(y,x)*spreadsheet_ref.get_cell_value(y,x);
+                    }
+                }
+                let mean = sum as f64 / count as f64;
+                let mean_sq = sq as f64 / count as f64;
+                let std = (mean_sq - mean*mean).sqrt();
+                std as i32
+            },
+            
             _ => {
                 panic!("Unsupported operation to process equation");
             }

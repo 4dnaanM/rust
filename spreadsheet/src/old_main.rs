@@ -16,13 +16,14 @@ fn main() {
 	for row in 0..m{
 		for col in 0..n{
 			let ops = vec![
-				if row>=1 {spreadsheet.cells[row-1][col].clone()} 
-				else {SharedOperand::new(Operand::new(Some((row,col)),Some((row+col).try_into().unwrap())))}
-				,
-				if col>=1 {spreadsheet.cells[row][col-1].clone()} 
-				else {SharedOperand::new(Operand::new(Some((row,col)),Some((row+col).try_into().unwrap())))}
+				// if row>=1 {spreadsheet.cells[row-1][col].clone()} 
+				// else {SharedOperand::new(Operand::new(Some((row,col)),Some((row+col).try_into().unwrap())))}
+				// ,
+				// if col>=1 {spreadsheet.cells[row][col-1].clone()} 
+				// else {SharedOperand::new(Operand::new(Some((row,col)),Some((row+col).try_into().unwrap())))}
 				// SharedOperand::new(Operand::new(Some((row,col)),Some((row+col).try_into().unwrap()))),
-				// SharedOperand::new(Operand::new(Some((row,col)),Some(0)))
+				SharedOperand::new(Operand::new(Some((row,col)),Some((1).try_into().unwrap()))),
+				SharedOperand::new(Operand::new(Some((row,col)),Some(0)))
 			];
 			let eq = Equation::new(Coordinate(row,col),Some(Type::ADD), Some(ops));
 			spreadsheet.set_cell_equation(row,col,eq);
@@ -30,41 +31,41 @@ fn main() {
 	}
 	spreadsheet.print();
 
-	// AUTO_RECALC_CHECK
-	let to_change = Coordinate(5,5);
-	spreadsheet.set_cell_equation(
-		to_change.0,
-		to_change.1, 
-		Equation::new(
-			to_change, 
-			Some(Type::ADD), 
-			Some(vec![
-				// spreadsheet.cells[0][0].clone(),
-				// spreadsheet.cells[0][0].clone(),
-				SharedOperand::new(Operand::new(Some(to_change),Some(10))),
-				SharedOperand::new(Operand::new(Some(to_change),Some(10)))
-			])
-		)
-	);
-	spreadsheet.print();
+	// // AUTO_RECALC_CHECK
+	// let to_change = Coordinate(5,5);
+	// spreadsheet.set_cell_equation(
+	// 	to_change.0,
+	// 	to_change.1, 
+	// 	Equation::new(
+	// 		to_change, 
+	// 		Some(Type::ADD), 
+	// 		Some(vec![
+	// 			// spreadsheet.cells[0][0].clone(),
+	// 			// spreadsheet.cells[0][0].clone(),
+	// 			SharedOperand::new(Operand::new(Some(to_change),Some(10))),
+	// 			SharedOperand::new(Operand::new(Some(to_change),Some(10)))
+	// 		])
+	// 	)
+	// );
+	// spreadsheet.print();
 
 	// CYCLE CHECK
-	spreadsheet.set_cell_equation(
-		3,
-		3, 
-		Equation::new(
-			to_change, 
-			Some(Type::ADD), 
-			Some(vec![
-				// spreadsheet.cells[0][0].clone(),
-				// spreadsheet.cells[3][4].clone(),
-				SharedOperand::new(Operand::new(Some(to_change),Some(10))),
-				SharedOperand::new(Operand::new(Some(to_change),Some(10)))
-			])
-		)
-	);
+	// spreadsheet.set_cell_equation(
+	// 	3,
+	// 	3, 
+	// 	Equation::new(
+	// 		to_change, 
+	// 		Some(Type::ADD), 
+	// 		Some(vec![
+	// 			// spreadsheet.cells[0][0].clone(),
+	// 			// spreadsheet.cells[3][4].clone(),
+	// 			SharedOperand::new(Operand::new(Some(to_change),Some(10))),
+	// 			SharedOperand::new(Operand::new(Some(to_change),Some(10)))
+	// 		])
+	// 	)
+	// );
 
-	spreadsheet.print();
+	// spreadsheet.print();
 
 	// TC
 
@@ -198,4 +199,46 @@ fn main() {
 		)
 	);
 	spreadsheet.print();
+
+	println!("Setting G(0,7) = SUM(A(0,1):F(0,1))");
+	spreadsheet.set_cell_equation(0,7,
+		Equation::new(
+			Coordinate(0,7),
+			Some(Type::SUM),
+			Some(vec![
+				spreadsheet.cells[0][1].clone(),
+				spreadsheet.cells[0][6].clone()
+			])
+		)
+	);
+	spreadsheet.print();
+
+	println!("Setting F(0,8) = AVG(A(0,1):F(0,1))");
+	spreadsheet.set_cell_equation(0,8,
+		Equation::new(
+			Coordinate(0,8),
+			Some(Type::AVG),
+			Some(vec![
+				spreadsheet.cells[0][1].clone(),
+				spreadsheet.cells[0][6].clone()
+			])
+		)
+	);
+	spreadsheet.print();
+
+	println!("Setting G(0,9) = DEV(A(0,1):F(0,1))");
+	spreadsheet.set_cell_equation(0,9,
+		Equation::new(
+			Coordinate(0,9),
+			Some(Type::DEV),
+			Some(vec![
+				spreadsheet.cells[0][1].clone(),
+				spreadsheet.cells[0][6].clone()
+			])
+		)
+	);
+	spreadsheet.print();
+	// (100+121+1+1+1+100)/6 - (28/6)^2 = 32.2, sqrt = 5.67, should display 5
+
+
 }

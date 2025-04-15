@@ -33,7 +33,7 @@ impl SpreadSheet {
 
     fn process_cell_equation(&self, row:usize, col:usize) -> i32{
         assert!(col < self.n && row < self.m,"process_cell_equation: Invalid cell coordinates ({},{})", row, col);
-        Operand::get_equation(&(self.cells[row][col].borrow())).process_equation()
+        Operand::get_equation(&(self.cells[row][col].borrow())).process_equation(self)
     }
 
     fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize),i32>) {
@@ -131,10 +131,10 @@ impl SpreadSheet {
         // self.cells[row][col].borrow_mut().set_equation(eq);
         let cell_ref = self.cells[row][col].clone();
         let old_eq = cell_ref.borrow().get_equation();
-        cell_ref.borrow_mut().set_equation(eq, cell_ref.clone());
+        cell_ref.borrow_mut().set_equation(eq, cell_ref.clone(), self);
 
         if !self.do_operation(row, col) {
-            {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone());}
+            {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone(),self);}
             // println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
             // print!("Old equation: ");
             // cell_ref.borrow_mut().get_equation().print();
