@@ -7,6 +7,7 @@ mod interface;
 
 use std::env;
 use std::io;
+use std::io::Write;
 use spreadsheet::SpreadSheet;
 
 pub fn main() {
@@ -36,7 +37,8 @@ pub fn main() {
     let mut spreadsheet = SpreadSheet::new(m,n);
 
     parser::print_output::print_sheet(1, 1, m, n);
-    
+    print!("[0.0] (ok) > ");
+    io::stdout().flush().unwrap();
     let mut enable_output = true;
     let mut row = 1;
     let mut col = 1;
@@ -45,17 +47,9 @@ pub fn main() {
         let mut user_input = String::new();
         io::stdin().read_line(&mut user_input).expect("Failed to read user input");
         let user_input = user_input.trim();
-        let command: Result<parser::command::Command, parser::error::Error> = parser::parser::parse_cmd(user_input);
-        match command {
-            Ok(command) => {
-                interface::process_command(&command, &mut spreadsheet, &mut row, &mut col, &mut enable_output, &mut quit, &m, &n);
-                if quit {
-                    break 'user_interaction;
-                }
-            },
-            Err(_) => {
-                
-            }
+        interface::process_command(user_input, &mut spreadsheet, &mut row, &mut col, &mut enable_output, &mut quit, &m, &n);
+        if quit {
+            break 'user_interaction;
         }
     }
 }
