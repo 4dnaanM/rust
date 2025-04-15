@@ -1,4 +1,6 @@
 use crate::parser::cell::Value;
+
+/// Represents function commands like A1=MAX(A2:A3)
 #[derive(PartialEq, Debug, Clone)]
 pub struct RangeCommand {
     pub target_cell: Value,
@@ -8,25 +10,29 @@ pub struct RangeCommand {
 }
 
 impl RangeCommand {
+    /// Checks if the range command is valid
     pub fn is_valid_range_command(&self) -> bool {
+        // Target must be a cell
         if let Value::Constant(_) = self.target_cell {
             return false;
         }
 
+        // Cell must be within bounds
         if let Value::Cell(cell) = self.target_cell {
             if !cell.is_valid_cell() {
                 return false;
             }
         }
 
+        // Both operands must be cells
         if let Value::Constant(_) = self.operand_1 {
             return false;
         }
-
         if let Value::Constant(_) = self.operand_2 {
             return false;
         }
 
+        // Both operands must be cells and must make a valid range
         match (self.operand_1, self.operand_2) {
             (Value::Cell(cell_1), Value::Cell(cell_2)) => {
                 cell_1.is_valid_cell() && cell_2.is_valid_cell() && cell_1.compare_cells(&cell_2)
@@ -36,6 +42,7 @@ impl RangeCommand {
     }
 }
 
+/// Represents an arithmetic command like A1=1 or A1=A1+2
 #[derive(PartialEq, Debug, Clone)]
 pub struct ArithmeticCommand {
     pub target_cell: Value,
@@ -45,17 +52,19 @@ pub struct ArithmeticCommand {
 }
 
 impl ArithmeticCommand {
+    /// Checks if the arithmetic command is valid
     pub fn is_valid_arithmetic_command(&self) -> bool {
+        // Target must be a valid cell
         if let Value::Constant(_) = self.target_cell {
             return false;
         }
-
         if let Value::Cell(cell) = self.target_cell {
             if !cell.is_valid_cell() {
                 return false;
             }
         }
 
+        // If any operand is a cell, it must be a valid cell
         if let Value::Cell(cell) = self.operand_1 {
             if !cell.is_valid_cell() {
                 return false;
@@ -80,6 +89,7 @@ impl ArithmeticCommand {
     }
 }
 
+/// Represents user interaction command like q, w, a, s, d, enable_output, disable_output
 #[derive(PartialEq, Debug, Clone)]
 pub struct UserInteractionCommand {
     pub command: String,
@@ -93,6 +103,8 @@ pub enum Command {
 }
 
 impl Command {
+    /// Prints the command. For Debug purpose
+    #[cfg(debug_assertions)]
     pub fn print_command(&self) {
         match self {
             Command::RangeCommand(cmd) => {
