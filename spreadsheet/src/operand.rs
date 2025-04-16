@@ -73,10 +73,16 @@ impl Cell {
 
             for y in y1..=y2 {
                 for x in x1..=x2 {
-                    if let Operand::Cell(neighbor) = spreadsheet_ref.cells[y][x].borrow().clone() {
-                        // print!("SKJHDLKASJ");
-                        neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
-                        println!("added to downstream of ({},{})",neighbor.coordinate.0, neighbor.coordinate.1);
+                    let current = &spreadsheet_ref.cells[y][x];
+                    if !current.borrow().is_cell() {
+                        let value = current.borrow().get_value();
+                        let new_cell = Operand::new(Some((y, x)), Some(value));
+                        let new_shared_cell = SharedOperand::new(new_cell);
+                        *current.borrow_mut() = new_shared_cell.borrow().clone();
+                    }
+                    let neighbor = current.borrow();
+                    if let Operand::Cell(ref cell) = *neighbor {
+                        cell.downstream_neighbors.borrow_mut().push(self_ref.clone());
                     }
                 }
             }
@@ -84,10 +90,16 @@ impl Cell {
 
         else{
             for operand in new_operands {
+                if !operand.borrow().is_cell() {
+                    let value = operand.borrow().get_value();
+                    let coord = operand.borrow().get_coordinate().clone();
+                    let new_cell = Operand::new(Some(coord), Some(value));
+                    let new_shared_cell = SharedOperand::new(new_cell);
+                    *operand.borrow_mut() = new_shared_cell.borrow().clone();
+                }
                 if let Operand::Cell(ref neighbor) = *operand.borrow() {
-                    // neighbor.downstream_neighbors.borrow_mut().insert(self_ref.clone());
                     neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
-                    print!("Added to downstream neighbors of: ({},{})",neighbor.coordinate.0, neighbor.coordinate.1);
+                    print!("Added to downstream neighbors of: ({},{})", neighbor.coordinate.0, neighbor.coordinate.1);
                 }
             }
         }
