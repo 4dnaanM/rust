@@ -118,28 +118,28 @@ impl Equation {
         }
     }
 
-    pub fn print(&self){
-        if self.t!=Type::NUL {
-            let coord0 = self.operands[0].borrow();
-            let coord1 = self.operands[1].borrow();
+    // pub fn print(&self){
+    //     if self.t!=Type::NUL {
+    //         let coord0 = self.operands[0].borrow();
+    //         let coord1 = self.operands[1].borrow();
 
-            let str0 = if coord0.is_cell() {
-                format!("({},{})", coord0.get_coordinate().0, coord0.get_coordinate().1)
-            } else {
-                format!("{}", coord0.get_value())
-            };
+    //         let str0 = if coord0.is_cell() {
+    //             format!("({},{})", coord0.get_coordinate().0, coord0.get_coordinate().1)
+    //         } else {
+    //             format!("{}", coord0.get_value())
+    //         };
 
-            let str1 = if coord1.is_cell() {
-                format!("({},{})", coord1.get_coordinate().0, coord1.get_coordinate().1)
-            } else {
-                format!("{}", coord1.get_value())
-            };
+    //         let str1 = if coord1.is_cell() {
+    //             format!("({},{})", coord1.get_coordinate().0, coord1.get_coordinate().1)
+    //         } else {
+    //             format!("{}", coord1.get_value())
+    //         };
 
-            print!("Equation: {} {} {}", str0, self.t.to_str(), str1);
-        }
-        else {
-            print!("Equation: ({},{}) NUL",self.coordinate.0,self.coordinate.1);
-        }   
-    }  
+    //         print!("Equation: {} {} {}", str0, self.t.to_str(), str1);
+    //     }
+    //     else {
+    //         print!("Equation: ({},{}) NUL",self.coordinate.0,self.coordinate.1);
+    //     }   
+    // }  
     
 }

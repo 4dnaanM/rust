@@ -162,7 +162,7 @@ fn main() {
 	);
 	spreadsheet.print();
 
-	println!("Setting E(0,5) = MIN[C(0,3),A(0,1)]");
+	println!("Setting E(0,5) = MIN[A(0,1),C(0,3)]");
 	spreadsheet.set_cell_equation(0,5,
 		Equation::new(
 			Coordinate(0,5),

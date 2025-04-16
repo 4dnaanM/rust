@@ -1,5 +1,6 @@
 use crate::equation::Equation;
 use crate::operand::{SharedOperand,Operand};
+use crate::utils::{Type,Coordinate}; 
 
 use std::collections::HashMap;
 
@@ -114,8 +115,24 @@ impl SpreadSheet {
         return true;
     } 
 
+    // pub fn set_cell_equation(&mut self, row:usize, col:usize, c1: Option<(usize,usize)>, c2: Option<(usize,usize)>, v1: Option<i32>, v2: Option<i32>, t:Option<Type>) {
+    //     assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
+
+    //     let op1 = match c1 {
+    //         Some(c) => self.cells[c.0][c.1].clone(),
+    //         None => SharedOperand::new(Operand::new(Some((row, col)), v1))
+    //     };
+    //     let op2 = match c2 {
+    //         Some(c) => self.cells[c.0][c.1].clone(),
+    //         None => SharedOperand::new(Operand::new(Some((row, col)), v2))
+    //     };
+    //     let ops = vec![op1, op2];
+
+    //     let eq = Equation::new(Coordinate(row,col), t, Some(ops));
+    //     self.set_cell_equation_from_eq(row, col, eq);   
+    // }
+
     pub fn set_cell_equation(&mut self, row:usize, col:usize, eq: Equation) {
-        assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
 
         // print!("New equation: ");
         // eq.print();
