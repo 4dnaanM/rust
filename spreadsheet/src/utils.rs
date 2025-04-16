@@ -36,16 +36,16 @@ impl Type {
     }
     pub fn from_str(s: &str) -> Type {
         match s {
-            "+" => Type::ADD,
-            "-" => Type::SUB,
-            "*" => Type::MUL,
-            "/" => Type::DIV,
+            "ADD" => Type::ADD,
+            "SUB" => Type::SUB,
+            "MUL" => Type::MUL,
+            "DIV" => Type::DIV,
             "NUL" => Type::NUL,
             "MIN" => Type::MIN,
             "MAX" => Type::MAX,
             "SUM" => Type::SUM,
             "AVG" => Type::AVG,
-            "STDEV" => Type::DEV,
+            "DEV" => Type::DEV,
             _ => panic!("Unknown type: {}", s)
         }
     }

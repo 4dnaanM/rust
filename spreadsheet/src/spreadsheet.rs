@@ -19,7 +19,6 @@ impl SpreadSheet {
         for i in 0..m {
             let mut row = Vec::<SharedOperand>::with_capacity(n);
             for j in 0..n {
-                // row.push(SharedOperand::new(Operand::new(Some((i, j)), Some((i+j) as i32))));
                 row.push(SharedOperand::new(Operand::new(Some((i, j)), Some(0))));
             }
             cells.push(row);
