@@ -7,8 +7,8 @@ use std::hash::{Hash, Hasher};
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Equation {
-    coordinate: Coordinate,
-    t: Type,
+    pub coordinate: Coordinate,
+    pub t: Type,
     
     // each equation should own its list of operands. When equation changes for a cell, construct a whole new one
     operands: Vec<SharedOperand>, // References to operands
@@ -46,21 +46,22 @@ impl Equation {
         let t = self.t;
         let operands = &self.operands;
         assert!(operands.len() <= 2, "Equation must have 2 operands");
-        let y1 = operands[0].borrow().get_coordinate().0;
-        let x1 = operands[0].borrow().get_coordinate().1;
-        let y2 = operands[1].borrow().get_coordinate().0;
-        let x2 = operands[1].borrow().get_coordinate().1;
         let v1 = operands[0].borrow().get_value();
-        let v2 = operands[0].borrow().get_value();
+        let v2 = operands[1].borrow().get_value();
         match t{
             Type::ADD => v1 + v2,
             Type::SUB => v1 - v2,
             Type::MUL => v1 * v2,
             Type::DIV => v1 / v2,
             Type::MIN => v1.min(v2),
-            Type::MAX => v1.max(v1),
+            Type::MAX => v1.max(v2),
 
             Type::SUM => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
                 
                 assert!(x1<=x2 && y1<=y2, "Invalid range!");
                 let mut sum = 0; 
@@ -73,6 +74,11 @@ impl Equation {
             },
             Type::AVG => {
 
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+
                 assert!(x1<=x2 && y1<=y2, "Invalid range!");
                 let count = ((y2-y1+1)*(x2-x1+1)) as i32;
                 let mut sum = 0; 
@@ -84,6 +90,11 @@ impl Equation {
                 sum/count
             },
             Type::DEV => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
 
                 assert!(x1<=x2 && y1<=y2, "Invalid range!");
                 let count = ((y2-y1+1)*(x2-x1+1)) as i32;

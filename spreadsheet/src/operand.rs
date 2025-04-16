@@ -1,6 +1,7 @@
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::Coordinate;
 use crate::equation::Equation;
+use crate::utils::Type;
 
 use std::hash::{Hash, Hasher};
 use std::cell::{RefCell, Ref, RefMut};
@@ -63,13 +64,30 @@ impl Cell {
     
         let new_operands = self.equation.get_operands().clone();
 
-        for operand in new_operands {
+        if self.equation.t==Type::SUM || self.equation.t == Type::AVG || self.equation.t == Type::DEV {
+            let y1 = new_operands[0].borrow().get_coordinate().0;
+            let x1 = new_operands[0].borrow().get_coordinate().1;
+            let y2 = new_operands[1].borrow().get_coordinate().0;
+            let x2 = new_operands[1].borrow().get_coordinate().1;
 
-            if let Operand::Cell(ref neighbor) = *operand.borrow() {
-                // neighbor.downstream_neighbors.borrow_mut().insert(self_ref.clone());
-                neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+            for y in y1..=y2 {
+                for x in x1..=x2 {
+                    if let Operand::Cell(neighbor) = spreadsheet_ref.cells[y][x].borrow().clone() {
+                        neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                    }
+                }
             }
         }
+        else{
+            for operand in new_operands {
+                if let Operand::Cell(ref neighbor) = *operand.borrow() {
+                    // neighbor.downstream_neighbors.borrow_mut().insert(self_ref.clone());
+                    neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                    // print!("Added to downstream neighbors of: ({},{})",neighbor.coordinate.0, neighbor.coordinate.1)
+                }
+            }
+        }
+        // self.print(); 
     
     }
     
