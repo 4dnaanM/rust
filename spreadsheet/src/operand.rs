@@ -64,7 +64,8 @@ impl Cell {
     
         let new_operands = self.equation.get_operands().clone();
 
-        if self.equation.t==Type::SUM || self.equation.t == Type::AVG || self.equation.t == Type::DEV {
+        if self.equation.t==Type::SUM || self.equation.t == Type::AVG || self.equation.t == Type::DEV || self.equation.t == Type::MIN || self.equation.t == Type::MAX {
+            
             let y1 = new_operands[0].borrow().get_coordinate().0;
             let x1 = new_operands[0].borrow().get_coordinate().1;
             let y2 = new_operands[1].borrow().get_coordinate().0;
@@ -73,17 +74,20 @@ impl Cell {
             for y in y1..=y2 {
                 for x in x1..=x2 {
                     if let Operand::Cell(neighbor) = spreadsheet_ref.cells[y][x].borrow().clone() {
+                        // print!("SKJHDLKASJ");
                         neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                        println!("added to downstream of ({},{})",neighbor.coordinate.0, neighbor.coordinate.1);
                     }
                 }
             }
         }
+
         else{
             for operand in new_operands {
                 if let Operand::Cell(ref neighbor) = *operand.borrow() {
                     // neighbor.downstream_neighbors.borrow_mut().insert(self_ref.clone());
                     neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
-                    // print!("Added to downstream neighbors of: ({},{})",neighbor.coordinate.0, neighbor.coordinate.1)
+                    print!("Added to downstream neighbors of: ({},{})",neighbor.coordinate.0, neighbor.coordinate.1);
                 }
             }
         }
@@ -91,34 +95,36 @@ impl Cell {
     
     }
     
-    // fn print (&self) {
-    //     print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
-    //     self.equation.print();
-    //     print!(", Downstream Neighbors: [");
-    //     for neighbor in self.downstream_neighbors.borrow().iter() {
-    //         let neighbor = neighbor.borrow();
-    //         let coord = neighbor.get_coordinate();
-    //         print!("({},{}),",coord.0,coord.1);
-    //     }
-    //     println!("]");
-    // }
+    fn print (&self) {
+        print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
+        self.equation.print();
+        print!(", Downstream Neighbors: [");
+        for neighbor in self.downstream_neighbors.borrow().iter() {
+            let neighbor = neighbor.borrow();
+            let coord = neighbor.get_coordinate();
+            print!("({},{}),",coord.0,coord.1);
+        }
+        println!("]");
+    }
 }
 
 
 
 #[derive(Eq, PartialEq, Clone, Hash)]
 struct Value {
-    value: i32
+    coordinate: Coordinate,
+    value: i32,
 } 
 impl Value {
-    fn new(val: i32) -> Self {
+    fn new(coordinate: Coordinate, val: i32) -> Self {
         Value {
-            value: val
+            value: val,
+            coordinate: coordinate
         }
     }
-    // fn print (&self) {
-    //     println!("V->{}",self.value);
-    // }
+    fn print (&self) {
+        println!("V->{}",self.value);
+    }
 }
 
 #[derive(Eq, PartialEq, Clone)]
@@ -140,7 +146,7 @@ impl Operand {
     
     pub fn new<U : Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
         match val {
-            Some(v) => Operand::Value(Value::new(v)),
+            Some(v) => Operand::Value(Value::new(input.unwrap().into(),v)),
             None => {
                 let coord = input.unwrap().into();
                 let (row,col) = (coord.0, coord.1);
@@ -149,12 +155,12 @@ impl Operand {
         }
     }
         
-    // pub fn print (&self) {
-    //     match self {
-    //         Operand::Cell(cell) => cell.print(),
-    //         Operand::Value(value) => value.print()
-    //     }
-    // }
+    pub fn print (&self) {
+        match self {
+            Operand::Cell(cell) => cell.print(),
+            Operand::Value(value) => value.print()
+        }
+    }
     
     pub fn get_value(&self) -> i32 {
         match self {
@@ -181,7 +187,7 @@ impl Operand {
     pub fn get_coordinate(&self) -> &Coordinate {
         match self {
             Operand::Cell(cell) => &cell.coordinate,
-            Operand::Value(_) => panic!("Value does not have a coordinate!")
+            Operand::Value(v) => &v.coordinate
         }
     }
 

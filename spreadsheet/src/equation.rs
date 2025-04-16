@@ -3,7 +3,7 @@ use super::operand::SharedOperand;
 use super::utils::Coordinate;
 use super::spreadsheet::SpreadSheet;
 
-use std::hash::{Hash, Hasher};
+use std::{hash::{Hash, Hasher}, i32};
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Equation {
@@ -53,8 +53,38 @@ impl Equation {
             Type::SUB => v1 - v2,
             Type::MUL => v1 * v2,
             Type::DIV => v1 / v2,
-            Type::MIN => v1.min(v2),
-            Type::MAX => v1.max(v2),
+            Type::MIN => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+                
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut min = i32::MAX; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        min = min.min(spreadsheet_ref.get_cell_value(y,x));
+                    }
+                }
+                min
+            },
+            Type::MAX => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+                
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut max = i32::MIN; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        max = max.max(spreadsheet_ref.get_cell_value(y,x));
+                    }
+                }
+                max
+            },
 
             Type::SUM => {
 
@@ -118,28 +148,28 @@ impl Equation {
         }
     }
 
-    // pub fn print(&self){
-    //     if self.t!=Type::NUL {
-    //         let coord0 = self.operands[0].borrow();
-    //         let coord1 = self.operands[1].borrow();
+    pub fn print(&self){
+        if self.t!=Type::NUL {
+            let coord0 = self.operands[0].borrow();
+            let coord1 = self.operands[1].borrow();
 
-    //         let str0 = if coord0.is_cell() {
-    //             format!("({},{})", coord0.get_coordinate().0, coord0.get_coordinate().1)
-    //         } else {
-    //             format!("{}", coord0.get_value())
-    //         };
+            let str0 = if coord0.is_cell() {
+                format!("({},{})", coord0.get_coordinate().0, coord0.get_coordinate().1)
+            } else {
+                format!("{}", coord0.get_value())
+            };
 
-    //         let str1 = if coord1.is_cell() {
-    //             format!("({},{})", coord1.get_coordinate().0, coord1.get_coordinate().1)
-    //         } else {
-    //             format!("{}", coord1.get_value())
-    //         };
+            let str1 = if coord1.is_cell() {
+                format!("({},{})", coord1.get_coordinate().0, coord1.get_coordinate().1)
+            } else {
+                format!("{}", coord1.get_value())
+            };
 
-    //         print!("Equation: {} {} {}", str0, self.t.to_str(), str1);
-    //     }
-    //     else {
-    //         print!("Equation: ({},{}) NUL",self.coordinate.0,self.coordinate.1);
-    //     }   
-    // }  
+            print!("Equation: {} {} {}", str0, self.t.to_str(), str1);
+        }
+        else {
+            print!("Equation: ({},{}) NUL",self.coordinate.0,self.coordinate.1);
+        }   
+    }  
     
 }

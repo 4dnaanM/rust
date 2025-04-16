@@ -49,6 +49,7 @@ impl SpreadSheet {
             let coord = neighbor_ref.get_coordinate();
             let r = coord.0; 
             let c = coord.1;
+            
             self.get_indegrees(r, c, set);
         }
         // print!("get_indegrees: Set: {:?}, ",set);
@@ -91,11 +92,12 @@ impl SpreadSheet {
     }
     
     fn do_operation(&mut self, row: usize, col: usize) -> bool{
-        // print!("do_operation: ");
-        // self.cells[row][col].borrow().print();
+        print!("do_operation: ");
+        self.cells[row][col].borrow().print();
         // get all the affected cells and indegrees
         let mut in_degrees = HashMap::new();
         self.get_indegrees(row,col, &mut in_degrees);
+        print!("do_operation: In degrees: {:?}\n", in_degrees);
         // print!("do_operation: In degrees: {:?}\n", in_degrees);
 
         //use indegrees to find toposort
