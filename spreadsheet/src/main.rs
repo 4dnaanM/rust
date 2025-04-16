@@ -11,9 +11,9 @@ use std::io::Write;
 use spreadsheet::SpreadSheet;
 
 pub fn main() {
-    // let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = env::args().collect();
 
-    let args= [String::from(""),String::from("10"),String::from("10")];
+    // let args= [String::from(""),String::from("10"),String::from("10")];
 
     if args.len() < 3 {
         println!("Expected two argument.");

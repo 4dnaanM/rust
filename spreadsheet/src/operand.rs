@@ -99,7 +99,7 @@ impl Cell {
                 }
                 if let Operand::Cell(ref neighbor) = *operand.borrow() {
                     neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
-                    print!("Added to downstream neighbors of: ({},{})", neighbor.coordinate.0, neighbor.coordinate.1);
+                    // print!("Added to downstream neighbors of: ({},{})", neighbor.coordinate.0, neighbor.coordinate.1);
                 }
             }
         }
@@ -107,17 +107,17 @@ impl Cell {
     
     }
     
-    fn print (&self) {
-        print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
-        self.equation.print();
-        print!(", Downstream Neighbors: [");
-        for neighbor in self.downstream_neighbors.borrow().iter() {
-            let neighbor = neighbor.borrow();
-            let coord = neighbor.get_coordinate();
-            print!("({},{}),",coord.0,coord.1);
-        }
-        println!("]");
-    }
+    // fn print (&self) {
+    //     print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
+    //     self.equation.print();
+    //     // print!(", Downstream Neighbors: [");
+    //     for neighbor in self.downstream_neighbors.borrow().iter() {
+    //         let neighbor = neighbor.borrow();
+    //         let coord = neighbor.get_coordinate();
+    //         print!("({},{}),",coord.0,coord.1);
+    //     }
+    //     println!("]");
+    // }
 }
 
 
@@ -134,9 +134,9 @@ impl Value {
             coordinate: coordinate
         }
     }
-    fn print (&self) {
-        println!("V->{}",self.value);
-    }
+    // fn print (&self) {
+    //     println!("V->{}",self.value);
+    // }
 }
 
 #[derive(Eq, PartialEq, Clone)]
@@ -167,12 +167,12 @@ impl Operand {
         }
     }
         
-    pub fn print (&self) {
-        match self {
-            Operand::Cell(cell) => cell.print(),
-            Operand::Value(value) => value.print()
-        }
-    }
+    // pub fn print (&self) {
+    //     match self {
+    //         Operand::Cell(cell) => cell.print(),
+    //         Operand::Value(value) => value.print()
+    //     }
+    // }
     
     pub fn get_value(&self) -> i32 {
         match self {

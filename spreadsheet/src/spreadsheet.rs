@@ -92,18 +92,18 @@ impl SpreadSheet {
     }
     
     fn do_operation(&mut self, row: usize, col: usize) -> bool{
-        print!("do_operation: ");
-        self.cells[row][col].borrow().print();
+        // print!("do_operation: ");
+        // self.cells[row][col].borrow().print();
         // get all the affected cells and indegrees
         let mut in_degrees = HashMap::new();
         self.get_indegrees(row,col, &mut in_degrees);
-        print!("do_operation: In degrees: {:?}\n", in_degrees);
+        // print!("do_operation: In degrees: {:?}\n", in_degrees);
         // print!("do_operation: In degrees: {:?}\n", in_degrees);
 
         //use indegrees to find toposort
         let order = self.toposort(in_degrees);
         if order.is_none() {
-            println!("do_operation: Cycle detected in the equation");
+            // println!("do_operation: Cycle detected in the equation");
             return false;
         }
         let order = order.unwrap();
@@ -163,15 +163,15 @@ impl SpreadSheet {
         
     }
 
-    pub fn print(&self) {
-        println!("----------------------------------------------------------------------");
-        for row in 0..self.m {
-            for col in 0..self.n {
-                print!("|{:6}", self.get_cell_value(row, col));
-            }
-            println!("|");
-        }
-        println!("----------------------------------------------------------------------");
-    }
+    // pub fn print(&self) {
+    //     println!("----------------------------------------------------------------------");
+    //     for row in 0..self.m {
+    //         for col in 0..self.n {
+    //             print!("|{:6}", self.get_cell_value(row, col));
+    //         }
+    //         println!("|");
+    //     }
+    //     println!("----------------------------------------------------------------------");
+    // }
     
 }
