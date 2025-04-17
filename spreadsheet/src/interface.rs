@@ -1,4 +1,3 @@
-use crate::equation::Equation;
 use crate::parser;
 use crate::parser::cell::Value;
 use crate::parser::command::Command;
@@ -8,9 +7,6 @@ use crate::spreadsheet::SpreadSheet;
 use std::time::Instant;
 use std::io::{self, Write};
 use crate::utils::Type;
-use crate::utils::Coordinate;
-use crate::operand::SharedOperand;
-use crate::operand::Operand;
 
 pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mut usize, col: &mut usize, enable_output: &mut bool, quit: &mut bool, max_rows: &usize, max_cols: &usize) {
     let start = Instant::now();
@@ -33,9 +29,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 panic!();
             };
             let t = Some(Type::from_str(cmd.function.as_str()));
-            let operands = Some(vec![spreadsheet.cells[operand_1.row-1][operand_1.col-1].clone(), spreadsheet.cells[operand_2.row-1][operand_2.col-1].clone() ]);
-            let equation = Equation::new(Coordinate(cell.row-1, cell.col-1), t, operands);
-            spreadsheet.set_cell_equation(cell.row-1, cell.col-1, equation);
+            spreadsheet.set_cell_equation(cell.row-1, cell.col-1, Some((operand_1.row-1, operand_1.col-1)), Some((operand_2.row-1, operand_2.col-1)), None, None, t);
             
             if *enable_output {
                 *row = cell.row;
@@ -48,25 +42,25 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 panic!();  
             };
 
-            let operand_1 = match cmd.operand_1 {
-                Value::Cell(cell_1) => {
-                    spreadsheet.cells[cell_1.row-1][cell_1.col-1].clone()
+            let (cell_1, const_1) = match cmd.operand_1 {
+                Value::Cell(cell) => {
+                    (Some((cell.row-1,cell.col-1)),None)
                 },
                 Value::Constant(constant) => {
-                    SharedOperand::new(Operand::new(Some((0, 1)), Some(constant)))
+                    (None, Some(constant))
                 }
             };
 
-            let operand_2 = match cmd.operand_2 {
+            let (cell_2, const_2) = match cmd.operand_2 {
                 Some(operand_2) => match operand_2 {
                     Value::Cell(cell_2) => {
-                        spreadsheet.cells[cell_2.row-1][cell_2.col-1].clone()
+                        (Some((cell_2.row-1,cell_2.col-1)),None)
                     },
                     Value::Constant(constant) => {
-                        SharedOperand::new(Operand::new(Some((0, 1)), Some(constant)))
+                        (None, Some(constant))
                     }
                 },
-                None => SharedOperand::new(Operand::new(Some((0, 1)), Some(0)))
+                None => (None, None)
             };
 
             let t = match cmd.operator {
@@ -74,9 +68,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 None => Some(Type::from_str("+"))
             };
 
-            let operands = Some(vec![operand_1, operand_2]);
-            let equation = Equation::new(Coordinate(cell.row-1, cell.col-1), t, operands);
-            spreadsheet.set_cell_equation(cell.row-1, cell.col-1, equation);
+            spreadsheet.set_cell_equation(cell.row-1, cell.col-1, cell_1,cell_2, const_1, const_2, t);
 
             if *enable_output {
                 *row = cell.row;
