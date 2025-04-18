@@ -1,5 +1,7 @@
 use crate::parser::cell::Value;
 
+use super::cell::Cell;
+
 /// Represents function commands like A1=MAX(A2:A3)
 #[derive(PartialEq, Debug, Clone)]
 pub struct RangeCommand {
@@ -11,7 +13,7 @@ pub struct RangeCommand {
 
 impl RangeCommand {
     /// Checks if the range command is valid
-    pub fn is_valid_range_command(&self) -> bool {
+    pub fn is_valid_range_command(&self, max_rows: usize, max_cols: usize) -> bool {
         // Target must be a cell
         if let Value::Constant(_) = self.target_cell {
             return false;
@@ -19,7 +21,7 @@ impl RangeCommand {
 
         // Cell must be within bounds
         if let Value::Cell(cell) = self.target_cell {
-            if !cell.is_valid_cell() {
+            if !cell.is_valid_cell(max_rows, max_cols) {
                 return false;
             }
         }
@@ -35,7 +37,7 @@ impl RangeCommand {
         // Both operands must be cells and must make a valid range
         match (self.operand_1, self.operand_2) {
             (Value::Cell(cell_1), Value::Cell(cell_2)) => {
-                cell_1.is_valid_cell() && cell_2.is_valid_cell() && cell_1.compare_cells(&cell_2)
+                cell_1.is_valid_cell(max_rows, max_cols) && cell_2.is_valid_cell(max_rows, max_cols) && cell_1.compare_cells(&cell_2)
             }
             _ => false,
         }
@@ -53,20 +55,20 @@ pub struct ArithmeticCommand {
 
 impl ArithmeticCommand {
     /// Checks if the arithmetic command is valid
-    pub fn is_valid_arithmetic_command(&self) -> bool {
+    pub fn is_valid_arithmetic_command(&self, max_rows: usize, max_cols: usize) -> bool {
         // Target must be a valid cell
         if let Value::Constant(_) = self.target_cell {
             return false;
         }
         if let Value::Cell(cell) = self.target_cell {
-            if !cell.is_valid_cell() {
+            if !cell.is_valid_cell(max_rows, max_cols) {
                 return false;
             }
         }
 
         // If any operand is a cell, it must be a valid cell
         if let Value::Cell(cell) = self.operand_1 {
-            if !cell.is_valid_cell() {
+            if !cell.is_valid_cell(max_rows, max_cols) {
                 return false;
             }
         }
@@ -74,7 +76,7 @@ impl ArithmeticCommand {
         match (&self.operator, self.operand_2) {
             (Some(_), Some(operand_2)) => match operand_2{
                 Value::Cell(cell) => {
-                    if !cell.is_valid_cell() {
+                    if !cell.is_valid_cell(max_rows, max_cols) {
                         return false;
                     }
                 },
@@ -93,6 +95,31 @@ impl ArithmeticCommand {
 #[derive(PartialEq, Debug, Clone)]
 pub struct UserInteractionCommand {
     pub command: String,
+    pub scroll_to_cell: Option<Cell>,
+}
+
+impl UserInteractionCommand {
+    pub fn is_valid_ui_command(&self, max_rows: usize, max_cols: usize) -> bool {
+        match self.scroll_to_cell {
+            Some(cell) => cell.is_valid_cell(max_rows, max_cols),
+            None => true
+        }
+    }
+}
+
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct SleepCommand {
+    pub value: Value
+}
+
+impl SleepCommand {
+    pub fn is_valid_sleep_command(&self, max_rows: usize, max_cols: usize) -> bool {
+        match self.value {
+            Value::Cell(cell) => cell.is_valid_cell(max_rows, max_cols),
+            Value::Constant(_) => true
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -100,6 +127,7 @@ pub enum Command {
     RangeCommand(RangeCommand),
     ArithmeticCommand(ArithmeticCommand),
     UserInteractionCommand(UserInteractionCommand),
+    SleepCommand(SleepCommand),
 }
 
 impl Command {
@@ -125,6 +153,9 @@ impl Command {
                 println!("UserInteractionCommand:");
                 println!("  command: {}", cmd.command);
             }
+            Command::SleepCommand(_) => {
+                println!("SleepCommand");
+            }
         }
     }
 }
@@ -136,17 +167,22 @@ mod tests {
 
     #[test]
     fn test_is_valid_range_command_returns_true() {
+        let max_rows = 999;
+        let max_cols = 18278;
+
         let cmd = RangeCommand {
             target_cell: Value::Cell(Cell { row: 1, col: 1 }),
             function: "SUM".to_string(),
             operand_1: Value::Cell(Cell { row: 1, col: 1 }),
             operand_2: Value::Cell(Cell { row: 3, col: 3 }),
         };
-        assert!(cmd.is_valid_range_command());
+        assert!(cmd.is_valid_range_command(max_rows, max_cols));
     }
 
     #[test]
     fn test_is_valid_range_command_returns_false_constant_values() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmds = vec![
             RangeCommand {
                 target_cell: Value::Constant(10),
@@ -168,84 +204,98 @@ mod tests {
             },
         ];
         for cmd in cmds {
-            assert!(!cmd.is_valid_range_command());
+            assert!(!cmd.is_valid_range_command(max_rows, max_cols));
         }
     }
 
     #[test]
     fn test_is_valid_range_command_returns_false_invalid_operand_range() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = RangeCommand {
             target_cell: Value::Cell(Cell { row: 1, col: 1 }),
             function: "SUM".to_string(),
             operand_1: Value::Cell(Cell { row: 5, col: 5 }),
             operand_2: Value::Cell(Cell { row: 2, col: 2 }),
         };
-        assert!(!cmd.is_valid_range_command());
+        assert!(!cmd.is_valid_range_command(max_rows, max_cols));
     }
 
     #[test]
     fn test_is_valid_arithmetic_command_returns_true_one_operand() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = ArithmeticCommand {
             target_cell: Value::Cell(Cell { row: 1, col: 1 }),
             operand_1: Value::Cell(Cell { row: 2, col: 2 }),
             operator: None,
             operand_2: None,
         };
-        assert!(cmd.is_valid_arithmetic_command());
+        assert!(cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
 
     #[test]
     fn test_is_valid_arithmetic_command_returns_true_two_operands() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = ArithmeticCommand {
             target_cell: Value::Cell(Cell { row: 1, col: 1 }),
             operand_1: Value::Cell(Cell { row: 2, col: 2 }),
             operator: Some("+".to_string()),
             operand_2: Some(Value::Constant(10)),
         };
-        assert!(cmd.is_valid_arithmetic_command());
+        assert!(cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
     
     #[test]
     fn test_is_valid_arithmetic_command_returns_false_target_constant() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = ArithmeticCommand {
             target_cell: Value::Constant(1),
             operand_1: Value::Constant(2),
             operator: Some("*".to_string()),
             operand_2: Some(Value::Constant(3)),
         };
-        assert!(!cmd.is_valid_arithmetic_command());
+        assert!(!cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
 
     #[test]
     fn test_is_valid_arithmetic_command_returns_false_missing_operand_2() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = ArithmeticCommand {
             target_cell: Value::Cell(Cell { row: 1, col: 1 }),
             operand_1: Value::Constant(5),
             operator: Some("-".to_string()),
             operand_2: None,
         };
-        assert!(!cmd.is_valid_arithmetic_command());
+        assert!(!cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
 
     #[test]
     fn test_is_valid_arithmetic_command_returns_false_missing_operator() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = ArithmeticCommand {
             target_cell: Value::Cell(Cell { row: 1, col: 1 }),
             operand_1: Value::Constant(5),
             operator: None,
             operand_2: Some(Value::Constant(10)),
         };
-        assert!(!cmd.is_valid_arithmetic_command());
+        assert!(!cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
 
     #[test]
     fn test_invalid_arithmetic_command_invalid_cell() {
+        let max_rows = 999;
+        let max_cols = 18278;
         let cmd = ArithmeticCommand {
             target_cell: Value::Cell(Cell { row: 0, col: 0 }),
             operand_1: Value::Cell(Cell { row: 1, col: 1 }),
             operator: Some("/".to_string()),
             operand_2: Some(Value::Constant(5)),
         };
-        assert!(!cmd.is_valid_arithmetic_command());
+        assert!(!cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
 }

@@ -10,7 +10,7 @@ use crate::utils::Type;
 
 pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mut usize, col: &mut usize, enable_output: &mut bool, quit: &mut bool, max_rows: &usize, max_cols: &usize) {
     let start = Instant::now();
-    let user_command: Result<Command, Error> = parser::parser::parse_cmd(user_input);
+    let user_command: Result<Command, Error> = parser::parser::parse_cmd(user_input, *max_rows, *max_cols);
     let Ok(command) = user_command else {
         let duration = start.elapsed();
         print!("[{:.1}] (invalid command) > ", duration.as_secs_f64());
@@ -32,9 +32,9 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             spreadsheet.set_cell_equation(cell.row-1, cell.col-1, Some((operand_1.row-1, operand_1.col-1)), Some((operand_2.row-1, operand_2.col-1)), None, None, t);
             
             if *enable_output {
-                *row = cell.row;
-                *col = cell.col;    
-                print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
+                // *row = cell.row;
+                // *col = cell.col;    
+                print_sheet(1 , 1, spreadsheet, *max_rows, *max_cols);
             }
         },
         Command::ArithmeticCommand(cmd) => {
@@ -71,9 +71,9 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             spreadsheet.set_cell_equation(cell.row-1, cell.col-1, cell_1,cell_2, const_1, const_2, t);
 
             if *enable_output {
-                *row = cell.row;
-                *col = cell.col;    
-                print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
+                // *row = cell.row;
+                // *col = cell.col;    
+                print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
             }
 
         },
@@ -108,13 +108,13 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 },
                 "s" => {
                     if *enable_output {
-                        *row = ((*row) + 10).min(*max_rows);
+                        *row = ((*row) + 10).min(*max_rows-9);
                         print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                     }
                 },
                 "d" => {
                     if *enable_output {
-                        *col = ((*col) + 10).min(*max_cols);
+                        *col = ((*col) + 10).min(*max_cols-9);
                         print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                     }
                 },
@@ -122,8 +122,20 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                     *quit = true;
                     return
                 },
+                "scroll_to" => {
+                    if let Some(scroll_to_cell) = cmd.scroll_to_cell {
+                        if *enable_output {
+                            *row = scroll_to_cell.row;
+                            *col = scroll_to_cell.col;
+                            print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
+                        }
+                    };
+                }
                 _ => ()
             }
+        },
+        Command::SleepCommand(_) => {
+
         }
     }
     let duration = start.elapsed();

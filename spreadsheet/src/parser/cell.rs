@@ -12,8 +12,8 @@ impl Cell {
     }
 
     /// Returns true if the cell is within the spreadsheet's bound i.e row <= 999 and col <= 18278
-    pub fn is_valid_cell(&self) -> bool {
-        self.row >=1 && self.row <= 999 && self.col >= 1 && self.col <= 18278 
+    pub fn is_valid_cell(&self, max_rows: usize, max_cols: usize) -> bool {
+        self.row >=1 && self.row <= max_rows && self.col >= 1 && self.col <= max_cols 
     }
 }
 
@@ -89,6 +89,9 @@ mod tests {
 
     #[test]
     fn test_is_valid_cell_returns_some() {
+        let max_rows = 999;
+        let max_cols = 18278;
+        
         let valid_cells = vec![
             Cell { row: 1, col: 1 },        // Top-leftmost cell of the spreadsheet
             Cell { row: 100, col: 100 },    // Arbitrary cell in the workseet
@@ -103,11 +106,11 @@ mod tests {
         ];
 
         for cell in valid_cells {
-            assert!(cell.is_valid_cell());
+            assert!(cell.is_valid_cell(max_rows, max_cols));
         }
 
         for cell in invalid_cells {
-            assert!(!cell.is_valid_cell());
+            assert!(!cell.is_valid_cell(max_rows, max_cols));
         }
     }
 
