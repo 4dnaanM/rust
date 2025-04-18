@@ -110,14 +110,16 @@ impl UserInteractionCommand {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct SleepCommand {
+    pub target_cell: Value,
     pub value: Value
 }
 
 impl SleepCommand {
     pub fn is_valid_sleep_command(&self, max_rows: usize, max_cols: usize) -> bool {
-        match self.value {
-            Value::Cell(cell) => cell.is_valid_cell(max_rows, max_cols),
-            Value::Constant(_) => true
+        match (self.target_cell, self.value) {
+           (Value::Cell(target_cell), Value::Cell(cell)) => target_cell.is_valid_cell(max_rows, max_cols) && cell.is_valid_cell(max_rows, max_cols),
+           (Value::Cell(target_cell), Value::Constant(_)) => target_cell.is_valid_cell(max_rows, max_cols),
+           _ => false
         }
     }
 }

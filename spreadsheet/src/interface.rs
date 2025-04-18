@@ -44,7 +44,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
 
             let (cell_1, const_1) = match cmd.operand_1 {
                 Value::Cell(cell) => {
-                    (Some((cell.row-1,cell.col-1)),None)
+                    (Some((cell.row-1,cell.col-1)), None)
                 },
                 Value::Constant(constant) => {
                     (None, Some(constant))
@@ -134,8 +134,27 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 _ => ()
             }
         },
-        Command::SleepCommand(_) => {
+        Command::SleepCommand(cmd) => {
+            let Value::Cell(target_cell) = cmd.target_cell else {
+                panic!();  
+            };
 
+            let (cell_1, const_1) = match cmd.value {
+                Value::Cell(cell) => {
+                    (Some((cell.row-1,cell.col-1)), None)
+                },
+                Value::Constant(constant) => {
+                    (None, Some(constant))
+                }
+            };
+            
+            let t = Type::SLP;
+
+            spreadsheet.set_cell_equation(target_cell.row-1, target_cell.col-1, cell_1, None, const_1, None, t);
+
+            if *enable_output {
+                print_sheet(1 , 1, spreadsheet, *max_rows, *max_cols);
+            }
         }
     }
     let duration = start.elapsed();

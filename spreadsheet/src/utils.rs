@@ -48,7 +48,7 @@ impl Type {
             "SUM" => Type::SUM,
             "AVG" => Type::AVG,
             "STDEV" => Type::DEV,
-            "SLP" => Type::SLP,
+            "SLEEP" => Type::SLP,
             _ => panic!("Unknown type: {}", s)
         }
     }

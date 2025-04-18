@@ -7,6 +7,8 @@ use crate::parser::command::UserInteractionCommand;
 use crate::parser::command::Command;
 use crate::parser::error::Error;
 
+use super::command::SleepCommand;
+
 /// Parses user input
 pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result<Command, Error> {
     let cell: String = String::from(r"[A-Z]+[0-9]+");
@@ -14,12 +16,13 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     let operator: String = String::from(r"(\+|\-|\*|\/)");
     let function: String = String::from(r"(MAX|MIN|AVG|STDEV|SUM)");
     let value: String = format!("({}|{})", cell, constant);
-    let ui_command: String = format!("^((?P<UI_COMMAND>w|d|a|s|q|(enable_output)|(disable_output))|(scroll_to (?P<SCROLL_TO_CELL>{})))$", cell);
+    let ui_command: String = format!("^((?P<UI_COMMAND>w|d|a|s|q|(\\s*enable_output\\s*)|(\\s*disable_output\\s*))|(\\s*scroll_to (?P<SCROLL_TO_CELL>{})\\s*))$", cell);
+    let sleep_command: String = format!("^((?P<SLEEP_TARGET_CELL>{})\\s*=\\s*SLEEP\\(\\s*(?P<SLEEP_VALUE>{})\\s*\\)\\s*)$", cell, value);
     let range_cmd: String = format!("^(\\s*(?P<TARGET_CELL_RANGE>{})\\s*=\\s*(?P<FUNCTION>{})\\(\\s*(?P<OPERAND_1_RANGE>{})\\s*:\\s*(?P<OPERAND_2_RANGE>{})\\s*\\)\\s*)$", cell, function, cell, cell);
     let arithmetic_cmd: String = format!("^(\\s*(?P<TARGET_CELL_ARTH>{})\\s*=\\s*(?P<OPERAND_1_ARTH>{})\\s*((?P<OPERATOR>{})\\s*(?P<OPERAND_2_ARTH>{})\\s*)?)$", cell, value, operator, value);
     
     // A valid command is either a UI command, range command or arithmetic command
-    let command: String = format!("{}|{}|{}", ui_command, range_cmd, arithmetic_cmd);
+    let command: String = format!("{}|{}|{}|{}", ui_command, sleep_command, range_cmd, arithmetic_cmd);
     let regex = Regex::new(&command).map_err(|e| Error::RegexError(e.to_string()))?;
 
     let captured_groups = regex.captures(user_command);
@@ -48,7 +51,33 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         return Ok(Command::UserInteractionCommand(user_interaction));
     }
 
-    // Second, check for range command
+    // Second, check for sleep command
+    let sleep_command_groups = ["SLEEP_TARGET_CELL", "SLEEP_VALUE"];
+    let is_sleep_command = sleep_command_groups.iter().all(|&g| captures.name(g).is_some());
+    if is_sleep_command {
+        let sleep_target_cell_str = captures.name("SLEEP_TARGET_CELL").ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?.as_str();
+        let sleep_target_cell = match convert_string_to_cell(sleep_target_cell_str) {
+            Some(target_cell) => target_cell,
+            None => {return Err(Error::InvalidInput(String::from("Invalid user input")))},
+        };
+
+        let sleep_value_str = captures.name("SLEEP_VALUE").ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?.as_str();
+        let sleep_value = match sleep_value_str.parse::<i32>() {
+            Ok(constant) => Value::Constant(constant),
+            Err(_) => match convert_string_to_cell(sleep_value_str) {
+                Some(sleep_value) => Value::Cell(sleep_value),
+                None => {return Err(Error::InvalidInput(String::from("Invalid user input")))},
+            }
+        };
+
+        let sleep_command = SleepCommand{target_cell: Value::Cell(sleep_target_cell), value: sleep_value};
+        if !sleep_command.is_valid_sleep_command(max_rows, max_cols) {
+            return Err(Error::InvalidInput("Invalid user input".to_string()));
+        }
+        return Ok(Command::SleepCommand(sleep_command));
+    }
+
+    // Third, check for range command
     let range_cmd_groups = ["TARGET_CELL_RANGE", "FUNCTION", "OPERAND_1_RANGE", "OPERAND_2_RANGE"];
     let is_range_command = range_cmd_groups.iter().all(|&g| captures.name(g).is_some());
     if is_range_command {
@@ -82,7 +111,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         return Ok(Command::RangeCommand(cmd));
     }
 
-    // Third, check for arithmetic command
+    // Fourth, check for arithmetic command
     let arithmetic_cmd_groups_required = ["TARGET_CELL_ARTH", "OPERAND_1_ARTH"];
     let arithmetic_cmd_groups_optional = ["OPERATOR", "OPERAND_2_ARTH"];
     let required_all_present = arithmetic_cmd_groups_required.iter().all(|&g| captures.name(g).is_some());
