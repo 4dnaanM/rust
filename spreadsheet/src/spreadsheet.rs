@@ -128,7 +128,7 @@ impl SpreadSheet {
             };
 
             let eq = Equation::new(Coordinate(row,col), Some(t), Some(vec![op]));
-            self.set_cell_equation_from_eq(row, col, eq);
+            return self.set_cell_equation_from_eq(row, col, eq);
         }
 
         assert!((c1.is_none() ^ v1.is_none()) || (c2.is_none() ^ v2.is_none()), "set_cell_equation: Specify either a cell coordinate or a value");

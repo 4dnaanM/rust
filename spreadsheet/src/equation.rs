@@ -44,7 +44,144 @@ impl Equation {
         &self.operands
     }
 
+    pub fn process_equation_silent(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
+        // println!("Processing equation silent: ");
+        // just get the value, don't sleep
+        let t = self.t;
+        if t == Type::SLP {
+            let c = self.operands[0].borrow().get_value();
+
+            if c.is_none() {
+                return None;
+            }
+            assert!(c.unwrap() >= 0, "Invalid negative sleep time");
+            // do nothing
+            return c;
+        }
+
+        let operands = &self.operands;
+        let v1 = operands[0].borrow().get_value();
+        if v1.is_none() {
+            return None;
+        }
+        let v1 = v1.unwrap();
+
+        let v2 = operands[1].borrow().get_value();
+        if v2.is_none() {
+            return None;
+        }
+        let v2 = v2.unwrap();
+
+        match t{
+            Type::ADD => Some(v1 + v2),
+            Type::SUB => Some(v1 - v2),
+            Type::MUL => Some(v1 * v2),
+            Type::DIV => {
+                match v2 {
+                    0 => None, 
+                    _ => Some(v1 / v2)
+                }
+            },
+            Type::MIN => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+                
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut min = i32::MAX; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        min = min.min(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MAX));
+                    }
+                }
+                Some(min)
+            },
+            Type::MAX => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+                
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut max = i32::MIN; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        max = max.max(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MIN));
+                    }
+                }
+                Some(max)
+            },
+
+            Type::SUM => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+                
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut sum = 0; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        sum += spreadsheet_ref.get_cell_value(y,x).unwrap_or(0);
+                    }
+                }
+                Some(sum)
+            },
+            Type::AVG => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut count = 0;
+                let mut sum = 0; 
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        let v = spreadsheet_ref.get_cell_value(y,x);
+                        sum += v.unwrap_or(0);
+                        count += if v.is_some() {1} else {0};
+                    }
+                }
+                Some(sum/count)
+            },
+            Type::DEV => {
+
+                let y1 = operands[0].borrow().get_coordinate().0;
+                let x1 = operands[0].borrow().get_coordinate().1;
+                let y2 = operands[1].borrow().get_coordinate().0;
+                let x2 = operands[1].borrow().get_coordinate().1;
+
+                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                let mut count = 0;
+                let mut sum = 0; 
+                let mut sq = 0;
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        let v = spreadsheet_ref.get_cell_value(y,x);
+                        sum += v.unwrap_or(0);
+                        count += if v.is_some() {1} else {0};
+                        sq += v.unwrap_or(0)*v.unwrap_or(0);
+                    }
+                }
+                let mean = sum as f64 / count as f64;
+                let mean_sq = sq as f64 / count as f64;
+                let std = (mean_sq - mean*mean).sqrt();
+                Some(std as i32)
+            },
+            _ => {
+                panic!("Unsupported operation to process equation");
+            }
+        }
+    }
+    
     pub fn process_equation(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
+        // println!("Processing equation: ");
         let t = self.t;
         if t == Type::SLP {
             let c = self.operands[0].borrow().get_value();

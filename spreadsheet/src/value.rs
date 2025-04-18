@@ -58,7 +58,7 @@ impl Cell {
             }
         }
     
-        self.value = eq.process_equation(spreadsheet_ref);
+        self.value = eq.process_equation_silent(spreadsheet_ref);
     
         self.equation = Box::new(eq);
     
