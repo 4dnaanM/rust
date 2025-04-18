@@ -1,11 +1,11 @@
 use super::utils::Type;
-use super::operand::{Operand,SharedOperand};
+use super::value::SharedOperand;
 use super::utils::Coordinate;
 use super::spreadsheet::SpreadSheet;
 
+use std::thread::sleep;
+use std::time::Duration; 
 use std::{hash::{Hash, Hasher}, i32};
-use std::rc::Rc;
-use std::cell::RefCell;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Equation {
@@ -46,8 +46,13 @@ impl Equation {
 
     pub fn process_equation(&self, spreadsheet_ref: &SpreadSheet) -> i32 {
         let t = self.t;
+        if t == Type::SLP {
+            let c = self.operands[0].borrow().get_value();
+            // do nothing for c seconds
+            sleep(Duration::from_secs(c as u64));
+            return c;
+        }
         let operands = &self.operands;
-        assert!(operands.len() <= 2, "Equation must have 2 operands");
         let v1 = operands[0].borrow().get_value();
         let v2 = operands[1].borrow().get_value();
         match t{
@@ -143,7 +148,6 @@ impl Equation {
                 let std = (mean_sq - mean*mean).sqrt();
                 std as i32
             },
-            
             _ => {
                 panic!("Unsupported operation to process equation");
             }

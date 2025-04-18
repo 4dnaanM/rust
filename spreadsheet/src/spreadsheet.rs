@@ -1,5 +1,5 @@
 use crate::equation::Equation;
-use crate::operand::{SharedOperand,Operand};
+use crate::value::{SharedOperand,Value};
 use crate::utils::{Type,Coordinate}; 
 
 use std::collections::HashMap;
@@ -20,7 +20,7 @@ impl SpreadSheet {
         for i in 0..m {
             let mut row = Vec::<SharedOperand>::with_capacity(n);
             for j in 0..n {
-                row.push(SharedOperand::new(Operand::new(Some((i, j)), Some(0))));
+                row.push(SharedOperand::new(Value::new(Some((i, j)), Some(0))));
             }
             cells.push(row);
         }
@@ -29,12 +29,12 @@ impl SpreadSheet {
     }
     pub fn get_cell_value(&self, row:usize, col:usize) -> i32{
         assert!(col < self.n && row < self.m,"get_cell_value: Invalid cell coordinates ({},{})", row, col);
-        Operand::get_value(&(self.cells[row][col].borrow()))
+        Value::get_value(&(self.cells[row][col].borrow()))
     }
 
     fn process_cell_equation(&self, row:usize, col:usize) -> i32{
         assert!(col < self.n && row < self.m,"process_cell_equation: Invalid cell coordinates ({},{})", row, col);
-        Operand::get_equation(&(self.cells[row][col].borrow())).process_equation(self)
+        Value::get_equation(&(self.cells[row][col].borrow())).process_equation(self)
     }
 
     fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize),i32>) {
@@ -122,11 +122,11 @@ impl SpreadSheet {
 
         let op1 = match c1 {
             Some(c) => self.cells[c.0][c.1].clone(),
-            None => SharedOperand::new(Operand::new(Some((row, col)), v1))
+            None => SharedOperand::new(Value::new(Some((row, col)), v1))
         };
         let op2 = match c2 {
             Some(c) => self.cells[c.0][c.1].clone(),
-            None => SharedOperand::new(Operand::new(Some((row, col)), v2))
+            None => SharedOperand::new(Value::new(Some((row, col)), v2))
         };
         let ops = vec![op1, op2];
 
@@ -137,8 +137,8 @@ impl SpreadSheet {
     pub fn set_cell_value(&mut self, row:usize, col:usize, v: i32) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
 
-        let op1 = SharedOperand::new(Operand::new(Some((row, col)), Some(v)));
-        let op2 = SharedOperand::new(Operand::new(Some((row, col)), Some(0)));
+        let op1 = SharedOperand::new(Value::new(Some((row, col)), Some(v)));
+        let op2 = SharedOperand::new(Value::new(Some((row, col)), Some(0)));
 
         let eq = Equation::new(Coordinate(row,col), Some(Type::ADD), Some(vec![op1,op2]));
         self.set_cell_equation_from_eq(row, col, eq);   
@@ -153,7 +153,7 @@ impl SpreadSheet {
         if !(self.cells[row][col].borrow().is_cell()) {
             // print!("Convert to a cell before setting equation: ");
             // self.cells[row][col].borrow().print(); 
-            self.cells[row][col] = SharedOperand::new(Operand::new(Some((row, col)), None));
+            self.cells[row][col] = SharedOperand::new(Value::new(Some((row, col)), None));
         }
         // self.cells[row][col].borrow().print(); 
 

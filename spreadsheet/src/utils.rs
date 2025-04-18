@@ -16,7 +16,8 @@ pub enum Type {
     MAX,
     SUM,
     AVG,
-    DEV
+    DEV,
+    SLP
 }
 
 impl Type {
@@ -31,7 +32,8 @@ impl Type {
             Type::MAX => "MAX",
             Type::SUM => "SUM",
             Type::AVG => "AVG",
-            Type::DEV => "DEV"
+            Type::DEV => "DEV",
+            Type::SLP => "SLP",
         }
     }
     pub fn from_str(s: &str) -> Type {
@@ -46,6 +48,7 @@ impl Type {
             "SUM" => Type::SUM,
             "AVG" => Type::AVG,
             "STDEV" => Type::DEV,
+            "SLP" => Type::SLP,
             _ => panic!("Unknown type: {}", s)
         }
     }
