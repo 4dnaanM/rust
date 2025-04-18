@@ -20,7 +20,7 @@ impl SpreadSheet {
         for i in 0..m {
             let mut row = Vec::<SharedOperand>::with_capacity(n);
             for j in 0..n {
-                row.push(SharedOperand::new(Value::new(Some((i, j)), Some(0))));
+                row.push(SharedOperand::new(Value::new(Some((i, j)), None)));
             }
             cells.push(row);
         }
@@ -117,28 +117,44 @@ impl SpreadSheet {
         return true;
     } 
 
-    pub fn set_cell_equation(&mut self, row:usize, col:usize, c1: Option<(usize,usize)>, c2: Option<(usize,usize)>, v1: Option<i32>, v2: Option<i32>, t:Option<Type>) {
+    pub fn set_cell_equation(&mut self, row:usize, col:usize, c1: Option<(usize,usize)>, c2: Option<(usize,usize)>, v1: Option<i32>, v2: Option<i32>, t:Type) {
+        
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
+        if t== Type::SLP {
+            assert! (c1.is_none() ^ v1.is_none(), "set_cell_equation: Specify either a cell coordinate or a value");
+            assert! (c2.is_none() && v2.is_none(), "set_cell_equation: SLP equation should not have a second operand");
+            let op = match c1 {
+                Some(c) => self.cells[c.0][c.1].clone(),
+                None => SharedOperand::new(Value::new(None::<Coordinate>, v1))
+            };
+
+            let eq = Equation::new(Coordinate(row,col), Some(t), Some(vec![op]));
+            self.set_cell_equation_from_eq(row, col, eq);
+
+            return;
+        }
+
+        assert!((c1.is_none() ^ v1.is_none()) || (c2.is_none() ^ v2.is_none()), "set_cell_equation: Specify either a cell coordinate or a value");
 
         let op1 = match c1 {
             Some(c) => self.cells[c.0][c.1].clone(),
-            None => SharedOperand::new(Value::new(Some((row, col)), v1))
+            None => SharedOperand::new(Value::new(None::<Coordinate>, v1))
         };
         let op2 = match c2 {
             Some(c) => self.cells[c.0][c.1].clone(),
-            None => SharedOperand::new(Value::new(Some((row, col)), v2))
+            None => SharedOperand::new(Value::new(None::<Coordinate>, v2))
         };
         let ops = vec![op1, op2];
 
-        let eq = Equation::new(Coordinate(row,col), t, Some(ops));
+        let eq = Equation::new(Coordinate(row,col), Some(t), Some(ops));
         self.set_cell_equation_from_eq(row, col, eq);   
     }
 
     pub fn set_cell_value(&mut self, row:usize, col:usize, v: i32) {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
 
-        let op1 = SharedOperand::new(Value::new(Some((row, col)), Some(v)));
-        let op2 = SharedOperand::new(Value::new(Some((row, col)), Some(0)));
+        let op1 = SharedOperand::new(Value::new(None::<Coordinate>, Some(v)));
+        let op2 = SharedOperand::new(Value::new(None::<Coordinate>, Some(0)));
 
         let eq = Equation::new(Coordinate(row,col), Some(Type::ADD), Some(vec![op1,op2]));
         self.set_cell_equation_from_eq(row, col, eq);   
@@ -149,12 +165,13 @@ impl SpreadSheet {
         // print!("New equation: ");
         // eq.print();
         // println!();
-        
-        if !(self.cells[row][col].borrow().is_cell()) {
-            // print!("Convert to a cell before setting equation: ");
-            // self.cells[row][col].borrow().print(); 
-            self.cells[row][col] = SharedOperand::new(Value::new(Some((row, col)), None));
-        }
+
+        // if self.cells[row][col].borrow().is_const() {
+        //     println!("Convert to a cell before setting equation: ");
+        //     // self.cells[row][col].borrow().print(); 
+        //     self.cells[row][col] = SharedOperand::new(Value::new(Some((row, col)), None));
+
+        // }
         // self.cells[row][col].borrow().print(); 
 
         // self.cells[row][col].borrow_mut().set_equation(eq);

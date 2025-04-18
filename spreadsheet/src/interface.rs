@@ -28,7 +28,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             let Value::Cell(operand_2) = cmd.operand_2 else {
                 panic!();
             };
-            let t = Some(Type::from_str(cmd.function.as_str()));
+            let t = Type::from_str(cmd.function.as_str());
             spreadsheet.set_cell_equation(cell.row-1, cell.col-1, Some((operand_1.row-1, operand_1.col-1)), Some((operand_2.row-1, operand_2.col-1)), None, None, t);
             
             if *enable_output {
@@ -64,8 +64,8 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             };
 
             let t = match cmd.operator {
-                Some(op) => Some(Type::from_str(op.as_str())),
-                None => Some(Type::from_str("+"))
+                Some(op) => Type::from_str(op.as_str()),
+                None => Type::from_str("+")
             };
 
             spreadsheet.set_cell_equation(cell.row-1, cell.col-1, cell_1,cell_2, const_1, const_2, t);

@@ -76,7 +76,8 @@ impl Cell {
                     let current = &spreadsheet_ref.cells[y][x];
                     if !current.borrow().is_cell() {
                         let value = current.borrow().get_value();
-                        let new_cell = Value::new(Some((y, x)), Some(value));
+                        let mut new_cell = Value::new(Some((y, x)), None);
+                        new_cell.set_value(value);
                         let new_shared_cell = SharedOperand::new(new_cell);
                         *current.borrow_mut() = new_shared_cell.borrow().clone();
                     }
@@ -90,13 +91,14 @@ impl Cell {
 
         else{
             for operand in new_operands {
-                if !operand.borrow().is_cell() {
-                    let value = operand.borrow().get_value();
-                    let coord = operand.borrow().get_coordinate().clone();
-                    let new_cell = Value::new(Some(coord), Some(value));
-                    let new_shared_cell = SharedOperand::new(new_cell);
-                    *operand.borrow_mut() = new_shared_cell.borrow().clone();
-                }
+                // if !operand.borrow().is_cell() {
+                //     let value = operand.borrow().get_value();
+                //     let coord = operand.borrow().get_coordinate().clone();
+                //     let mut new_cell = Value::new(Some(coord), None);
+                //     new_cell.set_value(value);
+                //     let new_shared_cell = SharedOperand::new(new_cell);
+                //     *operand.borrow_mut() = new_shared_cell.borrow().clone();
+                // }
                 if let Value::Cell(ref neighbor) = *operand.borrow() {
                     neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
                     // print!("Added to downstream neighbors of: ({},{})", neighbor.coordinate.0, neighbor.coordinate.1);
@@ -149,13 +151,13 @@ impl Constant {
 pub enum Value {
     // it should own the cell or value
     Cell(Cell), 
-    Value(Constant)
+    Constant(Constant)
 }
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Cell(cell) => cell.hash(state),
-            Value::Value(value) => value.hash(state)
+            Value::Constant(value) => value.hash(state)
         }
     }
 }
@@ -165,7 +167,7 @@ impl Value {
     pub fn new<U : Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
         match input {
             // Some(v) => Value::Value(Value::new(input.unwrap().into(),v)),
-            None => Value::Value(Constant::new(val.unwrap())),
+            None => Value::Constant(Constant::new(val.unwrap_or(0))),
             Some(i) => {
                 let coord = i.into();
                 let (row,col) = (coord.0, coord.1);
@@ -189,14 +191,14 @@ impl Value {
     pub fn get_value(&self) -> i32 {
         match self {
             Value::Cell(cell) => cell.value,
-            Value::Value(val) => val.value
+            Value::Constant(val) => val.value
         }
     }
 
     pub fn get_equation(&self) -> Equation {
         match self {
             Value::Cell(cell) => (*cell.equation).clone(),
-            Value::Value(_) => panic!("Value does not have an equation!")
+            Value::Constant(_) => panic!("Value does not have an equation!")
         }
     }
 
@@ -204,21 +206,21 @@ impl Value {
     pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand>> {
         match self {
             Value::Cell(cell) => cell.downstream_neighbors.clone(),
-            Value::Value(_) => panic!("Value does not have downstream neighbors!")
+            Value::Constant(_) => panic!("Value does not have downstream neighbors!")
         }
     }
     
     pub fn get_coordinate(&self) -> &Coordinate {
         match self {
             Value::Cell(cell) => &cell.coordinate,
-            Value::Value(_) => panic!("Value does not have a coordinate!")
+            Value::Constant(_) => panic!("Value does not have a coordinate!")
         }
     }
 
     pub fn set_value(&mut self, val: i32) {
         match self {
             Value::Cell(cell) => cell.value = val,
-            Value::Value(value) => value.value = val
+            Value::Constant(value) => value.value = val
         }
     }
 
@@ -227,14 +229,21 @@ impl Value {
             Value::Cell(cell) => {
                 cell.set_equation(eq,self_ref,spreadsheet_ref);
             },
-            Value::Value(_) => panic!("Value can't have an equation!")
+            Value::Constant(_) => panic!("Value can't have an equation!")
         }
     }
 
     pub fn is_cell(&self) -> bool {
         match self {
             Value::Cell(_) => true,
-            Value::Value(_) => false
+            _ => false
+        }
+    }
+
+    pub fn is_const(&self) -> bool {
+        match self {
+            Value::Constant(_) => true,
+            _ => false
         }
     }
 }
