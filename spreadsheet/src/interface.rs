@@ -6,7 +6,7 @@ use crate::parser::print_output::print_sheet;
 use crate::spreadsheet::SpreadSheet;
 use std::time::Instant;
 use std::io::{self, Write};
-use crate::utils::Type;
+use crate::utils::{Status, Type};
 
 pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mut usize, col: &mut usize, enable_output: &mut bool, quit: &mut bool, max_rows: &usize, max_cols: &usize) {
     let start = Instant::now();
@@ -14,9 +14,15 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
     let Ok(command) = user_command else {
         let duration = start.elapsed();
         print!("[{:.1}] (invalid command) > ", duration.as_secs_f64());
+        if *enable_output {
+            // *row = cell.row;
+            // *col = cell.col;    
+            print_sheet(1 , 1, spreadsheet, *max_rows, *max_cols);
+        }   
         io::stdout().flush().unwrap();
         return
     };
+    let status;
     match command {
         Command::RangeCommand(cmd) => {
             let Value::Cell(cell) = cmd.target_cell else {
@@ -29,7 +35,10 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 panic!();
             };
             let t = Type::from_str(cmd.function.as_str());
-            spreadsheet.set_cell_equation(cell.row-1, cell.col-1, Some((operand_1.row-1, operand_1.col-1)), Some((operand_2.row-1, operand_2.col-1)), None, None, t);
+            status = match spreadsheet.set_cell_equation(cell.row-1, cell.col-1, Some((operand_1.row-1, operand_1.col-1)), Some((operand_2.row-1, operand_2.col-1)), None, None, t) {
+                Status::OK => true,
+                Status::ERR => false
+            };
             
             if *enable_output {
                 // *row = cell.row;
@@ -68,7 +77,10 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 None => Type::from_str("+")
             };
 
-            spreadsheet.set_cell_equation(cell.row-1, cell.col-1, cell_1,cell_2, const_1, const_2, t);
+            status = match spreadsheet.set_cell_equation(cell.row-1, cell.col-1, cell_1,cell_2, const_1, const_2, t) {
+                Status::OK => true,
+                Status::ERR => false
+            };
 
             if *enable_output {
                 // *row = cell.row;
@@ -133,6 +145,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 }
                 _ => ()
             }
+            status = true;
         },
         Command::SleepCommand(cmd) => {
             let Value::Cell(target_cell) = cmd.target_cell else {
@@ -150,7 +163,10 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             
             let t = Type::SLP;
 
-            spreadsheet.set_cell_equation(target_cell.row-1, target_cell.col-1, cell_1, None, const_1, None, t);
+            status = match spreadsheet.set_cell_equation(target_cell.row-1, target_cell.col-1, cell_1, None, const_1, None, t){
+                Status::OK => true,
+                Status::ERR => false
+            };
 
             if *enable_output {
                 print_sheet(1 , 1, spreadsheet, *max_rows, *max_cols);
@@ -158,6 +174,10 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
         }
     }
     let duration = start.elapsed();
-    print!("[{:.1}] (ok) > ", duration.as_secs_f64());
+    if status {
+        print!("[{:.1}] (ok) > ", duration.as_secs_f64());
+    } else {
+        print!("[{:.1}] (err) > ", duration.as_secs_f64());
+    }
     io::stdout().flush().unwrap();
 }
