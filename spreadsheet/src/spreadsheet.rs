@@ -178,6 +178,23 @@ impl SpreadSheet {
         if ops.iter().any(|op| op == &cell_ref) {
             return Status::ERR;
         }
+        if eq.t == Type::SUM || eq.t == Type::AVG || eq.t == Type::DEV {
+            let c1 = eq.get_operands()[0].borrow();
+            let c2 = eq.get_operands()[1].borrow();
+
+            let y1 = c1.get_coordinate().0; 
+            let x1 = c1.get_coordinate().1;
+            let y2 = c2.get_coordinate().0;
+            let x2 = c2.get_coordinate().1;
+
+            for i in y1..=y2 {
+                for j in x1..=x2 {
+                    if i == row && j == col {
+                        return Status::ERR; // cycle detected
+                    }
+                }
+            }
+        }
 
         let old_eq = cell_ref.borrow().get_equation().clone();
         cell_ref.borrow_mut().set_equation(eq, cell_ref.clone(), self);
