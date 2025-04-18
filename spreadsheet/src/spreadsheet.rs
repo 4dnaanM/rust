@@ -1,6 +1,6 @@
 use crate::equation::Equation;
 use crate::value::{SharedOperand,Value};
-use crate::utils::{Type,Coordinate}; 
+use crate::utils::{Type,Coordinate,Status}; 
 
 use std::collections::HashMap;
 
@@ -10,7 +10,6 @@ pub struct SpreadSheet {
     m: usize, 
     n: usize, 
     pub cells: Vec<Vec<SharedOperand>> 
-    
 }	
 
 impl SpreadSheet {	
@@ -27,12 +26,12 @@ impl SpreadSheet {
 
         SpreadSheet { m, n, cells }
     }
-    pub fn get_cell_value(&self, row:usize, col:usize) -> i32{
+    pub fn get_cell_value(&self, row:usize, col:usize) -> Option<i32>{
         assert!(col < self.n && row < self.m,"get_cell_value: Invalid cell coordinates ({},{})", row, col);
         Value::get_value(&(self.cells[row][col].borrow()))
     }
 
-    fn process_cell_equation(&self, row:usize, col:usize) -> i32{
+    fn process_cell_equation(&self, row:usize, col:usize) -> Option<i32>{
         assert!(col < self.n && row < self.m,"process_cell_equation: Invalid cell coordinates ({},{})", row, col);
         Value::get_equation(&(self.cells[row][col].borrow())).process_equation(self)
     }
@@ -117,7 +116,7 @@ impl SpreadSheet {
         return true;
     } 
 
-    pub fn set_cell_equation(&mut self, row:usize, col:usize, c1: Option<(usize,usize)>, c2: Option<(usize,usize)>, v1: Option<i32>, v2: Option<i32>, t:Type) {
+    pub fn set_cell_equation(&mut self, row:usize, col:usize, c1: Option<(usize,usize)>, c2: Option<(usize,usize)>, v1: Option<i32>, v2: Option<i32>, t:Type) -> Status {
         
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
         if t== Type::SLP {
@@ -130,8 +129,6 @@ impl SpreadSheet {
 
             let eq = Equation::new(Coordinate(row,col), Some(t), Some(vec![op]));
             self.set_cell_equation_from_eq(row, col, eq);
-
-            return;
         }
 
         assert!((c1.is_none() ^ v1.is_none()) || (c2.is_none() ^ v2.is_none()), "set_cell_equation: Specify either a cell coordinate or a value");
@@ -147,20 +144,20 @@ impl SpreadSheet {
         let ops = vec![op1, op2];
 
         let eq = Equation::new(Coordinate(row,col), Some(t), Some(ops));
-        self.set_cell_equation_from_eq(row, col, eq);   
+        self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    pub fn set_cell_value(&mut self, row:usize, col:usize, v: i32) {
+    pub fn set_cell_value(&mut self, row:usize, col:usize, v: i32) -> Status {
         assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
 
         let op1 = SharedOperand::new(Value::new(None::<Coordinate>, Some(v)));
         let op2 = SharedOperand::new(Value::new(None::<Coordinate>, Some(0)));
 
         let eq = Equation::new(Coordinate(row,col), Some(Type::ADD), Some(vec![op1,op2]));
-        self.set_cell_equation_from_eq(row, col, eq);   
+        self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    pub fn set_cell_equation_from_eq(&mut self, row:usize, col:usize, eq: Equation) {
+    pub fn set_cell_equation_from_eq(&mut self, row:usize, col:usize, eq: Equation) -> Status {
 
         // print!("New equation: ");
         // eq.print();
@@ -176,18 +173,25 @@ impl SpreadSheet {
 
         // self.cells[row][col].borrow_mut().set_equation(eq);
         let cell_ref = self.cells[row][col].clone();
+
+        let ops = eq.get_operands().clone();
+        if ops.iter().any(|op| op == &cell_ref) {
+            return Status::ERR;
+        }
+
         let old_eq = cell_ref.borrow().get_equation();
         cell_ref.borrow_mut().set_equation(eq, cell_ref.clone(), self);
 
         if !self.do_operation(row, col) {
             {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone(),self);}
+            return Status::ERR; 
             // println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
             // print!("Old equation: ");
             // cell_ref.borrow_mut().get_equation().print();
             // println!();
         };
 
-        
+        Status::OK
     }
 
     // pub fn print(&self) {

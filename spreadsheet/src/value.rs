@@ -14,7 +14,7 @@ use std::rc::Rc;
 #[derive(Eq, PartialEq, Clone)]
 struct Cell {
     pub coordinate: Coordinate,
-    pub value: i32,
+    pub value: Option<i32>,
     
     // each cell owns its equation.
     pub equation: Box<Equation>,
@@ -36,7 +36,7 @@ impl Cell {
         let coordinate = input.into();
         Cell {
             coordinate,
-            value: 0,
+            value: Some(0),
             equation: Box::new(Equation::new(coordinate, None, None)),
             // downstream_neighbors: RefCell::new(HashSet::<SharedOperand>::new()),
             downstream_neighbors: RefCell::new(Vec::<SharedOperand>::new()),
@@ -74,13 +74,13 @@ impl Cell {
             for y in y1..=y2 {
                 for x in x1..=x2 {
                     let current = &spreadsheet_ref.cells[y][x];
-                    if !current.borrow().is_cell() {
-                        let value = current.borrow().get_value();
-                        let mut new_cell = Value::new(Some((y, x)), None);
-                        new_cell.set_value(value);
-                        let new_shared_cell = SharedOperand::new(new_cell);
-                        *current.borrow_mut() = new_shared_cell.borrow().clone();
-                    }
+                    // if !current.borrow().is_cell() {
+                    //     let value = current.borrow().get_value();
+                    //     let mut new_cell = Value::new(Some((y, x)), None);
+                    //     new_cell.set_value(value);
+                    //     let new_shared_cell = SharedOperand::new(new_cell);
+                    //     *current.borrow_mut() = new_shared_cell.borrow().clone();
+                    // }
                     let neighbor = current.borrow();
                     if let Value::Cell(ref cell) = *neighbor {
                         cell.downstream_neighbors.borrow_mut().push(self_ref.clone());
@@ -148,6 +148,12 @@ impl Constant {
 }
 
 #[derive(Eq, PartialEq, Clone)]
+pub enum CellStatus {
+    OK,
+    ERR
+}
+
+#[derive(Eq, PartialEq, Clone)]
 pub enum Value {
     // it should own the cell or value
     Cell(Cell), 
@@ -173,7 +179,7 @@ impl Value {
                 let (row,col) = (coord.0, coord.1);
                 let mut ans = Value::Cell(Cell::new((row,col)));
                 match val {
-                    Some(v) => ans.set_value(v),
+                    Some(v) => ans.set_value(Some(v)),
                     None => {}
                 }
                 return ans
@@ -188,10 +194,10 @@ impl Value {
     //     }
     // }
     
-    pub fn get_value(&self) -> i32 {
+    pub fn get_value(&self) -> Option<i32> {
         match self {
             Value::Cell(cell) => cell.value,
-            Value::Constant(val) => val.value
+            Value::Constant(val) => Some(val.value)
         }
     }
 
@@ -217,10 +223,10 @@ impl Value {
         }
     }
 
-    pub fn set_value(&mut self, val: i32) {
+    pub fn set_value(&mut self, val: Option<i32>) {
         match self {
             Value::Cell(cell) => cell.value = val,
-            Value::Constant(value) => value.value = val
+            Value::Constant(value) => value.value = val.unwrap_or(0)
         }
     }
 
@@ -244,6 +250,13 @@ impl Value {
         match self {
             Value::Constant(_) => true,
             _ => false
+        }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        match self {
+            Value::Cell(v) => v.value.is_some(),
+            _ => true
         }
     }
 }

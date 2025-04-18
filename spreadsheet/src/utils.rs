@@ -53,3 +53,8 @@ impl Type {
         }
     }
 }
+
+pub enum Status {
+    OK,
+    ERR
+}

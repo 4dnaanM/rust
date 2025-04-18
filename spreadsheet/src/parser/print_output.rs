@@ -23,7 +23,12 @@ pub fn print_sheet(start_row: usize, start_col: usize, spreadsheet: &SpreadSheet
         print!("{}\t", row);
         for col in start_col..(start_col + 10).min(max_cols+1) {
             let value = spreadsheet.get_cell_value(row-1, col-1);
-            print!("{}\t", value);
+            if value.is_none() {
+                print!("ERR\t");
+            }
+            else{
+                print!("{}\t", value.unwrap());
+            }
         }
         println!();
     }
