@@ -206,3 +206,101 @@ impl SpreadSheet {
     // }
     
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_spreadsheet() {
+        let spreadsheet = SpreadSheet::new(3, 3);
+        assert_eq!(spreadsheet.m, 3);
+        assert_eq!(spreadsheet.n, 3);
+        assert_eq!(spreadsheet.cells.len(), 3);
+        assert_eq!(spreadsheet.cells[0].len(), 3);
+    }
+
+    #[test]
+    fn test_set_and_get_cell_value() {
+        let mut spreadsheet = SpreadSheet::new(3, 3);
+        let status = spreadsheet.set_cell_value(1, 1, 42);
+        assert_eq!(status, Status::OK);
+        assert_eq!(spreadsheet.get_cell_value(1, 1), Some(42));
+    }
+
+    #[test]
+    fn test_set_cell_equation_addition() {
+        let mut spreadsheet = SpreadSheet::new(3, 3);
+        spreadsheet.set_cell_value(0, 0, 10);
+        spreadsheet.set_cell_value(0, 1, 20);
+
+        let status = spreadsheet.set_cell_equation(
+            0,
+            2,
+            Some((0, 0)),
+            Some((0, 1)),
+            None,
+            None,
+            Type::ADD,
+        );
+        assert_eq!(status, Status::OK);
+        assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
+    }
+
+    #[test]
+    fn test_set_cell_equation_subtraction() {
+        let mut spreadsheet = SpreadSheet::new(3, 3);
+        spreadsheet.set_cell_value(0, 0, 50);
+        spreadsheet.set_cell_value(0, 1, 20);
+
+        let status = spreadsheet.set_cell_equation(
+            0,
+            2,
+            Some((0, 0)),
+            Some((0, 1)),
+            None,
+            None,
+            Type::SUB,
+        );
+        assert_eq!(status, Status::OK);
+        assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
+    }
+
+    #[test]
+    fn test_cycle_detection() {
+        let mut spreadsheet = SpreadSheet::new(3, 3);
+        spreadsheet.set_cell_value(0, 0, 10);
+        spreadsheet.set_cell_value(0, 1, 20);
+
+        spreadsheet.set_cell_equation(
+            0,
+            2,
+            Some((0, 0)),
+            Some((0, 1)),
+            None,
+            None,
+            Type::ADD,
+        );
+
+        let status = spreadsheet.set_cell_equation(
+            0,
+            0,
+            Some((0, 2)),
+            None,
+            None,
+            None,
+            Type::ADD,
+        );
+        assert_eq!(status, Status::ERR); // Cycle detected
+    }
+
+    #[test]
+    fn test_set_cell_equation_single_operand() {
+        let mut spreadsheet = SpreadSheet::new(3, 3);
+        spreadsheet.set_cell_value(0, 0, 1);
+
+        let status = spreadsheet.set_cell_equation(0, 1, Some((0, 0)), None, None, None, Type::SLP);
+        assert_eq!(status, Status::OK);
+        assert_eq!(spreadsheet.get_cell_value(0, 1), Some(1));
+    }
+
+}

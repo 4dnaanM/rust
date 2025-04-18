@@ -288,3 +288,75 @@ impl SharedOperand {
 
 // References to Operands that can be shared and also mutated
 // Solely to prevent duplication
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_constant_creation() {
+        let constant = Constant::new(42);
+        assert_eq!(constant.value, 42);
+    }
+
+    #[test]
+    fn test_cell_creation() {
+        let coord = Coordinate(1, 1);
+        let cell = Cell::new(coord);
+        assert_eq!(cell.coordinate, coord);
+        assert_eq!(cell.value, Some(0));
+    }
+
+    #[test]
+    fn test_value_creation_constant() {
+        let value = Value::new(None::<Coordinate>, Some(10));
+        assert!(value.is_const());
+        assert_eq!(value.get_value(), Some(10));
+    }
+
+    #[test]
+    fn test_value_creation_cell() {
+        let coord = Coordinate(2, 3);
+        let value = Value::new(Some(coord), Some(5));
+        assert!(value.is_cell());
+        assert_eq!(value.get_value(), Some(5));
+        assert_eq!(value.get_coordinate(), &coord);
+    }
+
+    #[test]
+    fn test_set_value() {
+        let mut value = Value::new(None::<Coordinate>, Some(10));
+        value.set_value(Some(20));
+        assert_eq!(value.get_value(), Some(20));
+    }
+
+    #[test]
+    fn test_set_equation() {
+        let coord = Coordinate(0, 0);
+        let mut cell = Cell::new(coord);
+        let equation = Equation::new(coord, None, None);
+        let spreadsheet = SpreadSheet::new(3, 3); // Assuming SpreadSheet has a new method
+        let shared_operand = SharedOperand::new(Value::Cell(cell.clone()));
+
+        cell.set_equation(equation, shared_operand, &spreadsheet);
+        assert!(cell.equation.get_operands().is_empty());
+    }
+
+    #[test]
+    fn test_shared_operand() {
+        let value = Value::new(None::<Coordinate>, Some(15));
+        let shared_operand = SharedOperand::new(value);
+        assert_eq!(shared_operand.borrow().get_value(), Some(15));
+    }
+
+    #[test]
+    fn test_downstream_neighbors() {
+        let coord1 = Coordinate(1, 1);
+        let coord2 = Coordinate(2, 2);
+        let mut cell1 = Cell::new(coord1);
+        let cell2 = Cell::new(coord2);
+        let shared_operand = SharedOperand::new(Value::Cell(cell2));
+
+        cell1.downstream_neighbors.borrow_mut().push(shared_operand.clone());
+        assert_eq!(cell1.downstream_neighbors.borrow().len(), 1);
+    }
+}

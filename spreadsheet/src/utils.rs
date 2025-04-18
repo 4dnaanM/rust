@@ -54,6 +54,7 @@ impl Type {
     }
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum Status {
     OK,
     ERR
