@@ -124,14 +124,20 @@ impl Cell {
 
 #[derive(Eq, PartialEq, Clone, Hash)]
 struct Value {
-    coordinate: Coordinate,
+    // coordinate: Coordinate,
     value: i32,
 } 
 impl Value {
-    fn new(coordinate: Coordinate, val: i32) -> Self {
+    // fn new(coordinate: Coordinate, val: i32) -> Self {
+    //     Value {
+    //         value: val,
+    //         coordinate: coordinate
+    //     }
+    // }
+
+    fn new(val: i32) -> Self {
         Value {
             value: val,
-            coordinate: coordinate
         }
     }
     // fn print (&self) {
@@ -157,12 +163,18 @@ impl Hash for Operand {
 impl Operand {
     
     pub fn new<U : Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
-        match val {
-            Some(v) => Operand::Value(Value::new(input.unwrap().into(),v)),
-            None => {
-                let coord = input.unwrap().into();
+        match input {
+            // Some(v) => Operand::Value(Value::new(input.unwrap().into(),v)),
+            None => Operand::Value(Value::new(val.unwrap())),
+            Some(i) => {
+                let coord = i.into();
                 let (row,col) = (coord.0, coord.1);
-                Operand::Cell(Cell::new((row,col)))
+                let mut ans = Operand::Cell(Cell::new((row,col)));
+                match val {
+                    Some(v) => ans.set_value(v),
+                    None => {}
+                }
+                return ans
             }
         }
     }
@@ -199,7 +211,7 @@ impl Operand {
     pub fn get_coordinate(&self) -> &Coordinate {
         match self {
             Operand::Cell(cell) => &cell.coordinate,
-            Operand::Value(v) => &v.coordinate
+            Operand::Value(_) => panic!("Value does not have a coordinate!")
         }
     }
 

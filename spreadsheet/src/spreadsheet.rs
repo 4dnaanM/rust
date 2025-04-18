@@ -134,6 +134,16 @@ impl SpreadSheet {
         self.set_cell_equation_from_eq(row, col, eq);   
     }
 
+    pub fn set_cell_value(&mut self, row:usize, col:usize, v: i32) {
+        assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
+
+        let op1 = SharedOperand::new(Operand::new(Some((row, col)), Some(v)));
+        let op2 = SharedOperand::new(Operand::new(Some((row, col)), Some(0)));
+
+        let eq = Equation::new(Coordinate(row,col), Some(Type::ADD), Some(vec![op1,op2]));
+        self.set_cell_equation_from_eq(row, col, eq);   
+    }
+
     pub fn set_cell_equation_from_eq(&mut self, row:usize, col:usize, eq: Equation) {
 
         // print!("New equation: ");

@@ -1,9 +1,11 @@
 use super::utils::Type;
-use super::operand::SharedOperand;
+use super::operand::{Operand,SharedOperand};
 use super::utils::Coordinate;
 use super::spreadsheet::SpreadSheet;
 
 use std::{hash::{Hash, Hasher}, i32};
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Equation {

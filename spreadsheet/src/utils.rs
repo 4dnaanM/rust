@@ -50,9 +50,3 @@ impl Type {
         }
     }
 }
-
-pub enum STATUS {
-    OK, 
-    ERR, 
-    
-}
