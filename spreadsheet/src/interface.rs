@@ -15,8 +15,6 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
         let duration = start.elapsed();
         print!("[{:.1}] (invalid command) > ", duration.as_secs_f64());
         if *enable_output {
-            // *row = cell.row;
-            // *col = cell.col;    
             print_sheet(1 , 1, spreadsheet, *max_rows, *max_cols);
         }   
         io::stdout().flush().unwrap();
@@ -41,8 +39,6 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             };
             
             if *enable_output {
-                // *row = cell.row;
-                // *col = cell.col;    
                 print_sheet(1 , 1, spreadsheet, *max_rows, *max_cols);
             }
         },
@@ -83,8 +79,6 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             };
 
             if *enable_output {
-                // *row = cell.row;
-                // *col = cell.col;    
                 print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
             }
 
@@ -94,6 +88,7 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
             match ui_command.as_str() {
                 "enable_output" => {
                     *enable_output = true;
+                    print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                 },
                 "disable_output" => {
                     *enable_output = false;
@@ -136,9 +131,9 @@ pub fn process_command(user_input: &str, spreadsheet: &mut SpreadSheet, row: &mu
                 },
                 "scroll_to" => {
                     if let Some(scroll_to_cell) = cmd.scroll_to_cell {
+                        *row = scroll_to_cell.row;
+                        *col = scroll_to_cell.col;
                         if *enable_output {
-                            *row = scroll_to_cell.row;
-                            *col = scroll_to_cell.col;
                             print_sheet(*row , *col, spreadsheet, *max_rows, *max_cols);
                         }
                     };
