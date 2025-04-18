@@ -179,7 +179,7 @@ impl SpreadSheet {
             return Status::ERR;
         }
 
-        let old_eq = cell_ref.borrow().get_equation();
+        let old_eq = cell_ref.borrow().get_equation().clone();
         cell_ref.borrow_mut().set_equation(eq, cell_ref.clone(), self);
 
         if !self.do_operation(row, col) {

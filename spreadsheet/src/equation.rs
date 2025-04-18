@@ -46,7 +46,9 @@ impl Equation {
 
     pub fn process_equation_silent(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
         // println!("Processing equation silent: ");
+        // self.print();
         // just get the value, don't sleep
+        
         let t = self.t;
         if t == Type::SLP {
             let c = self.operands[0].borrow().get_value();
@@ -60,6 +62,10 @@ impl Equation {
         }
 
         let operands = &self.operands;
+        if operands.len() == 0 {
+            return Some(0);
+        }
+        // println!("Operands");
         let v1 = operands[0].borrow().get_value();
         if v1.is_none() {
             return None;
@@ -182,6 +188,10 @@ impl Equation {
     
     pub fn process_equation(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
         // println!("Processing equation: ");
+        if self.operands.len() == 0 {
+            return Some(0);
+        }
+
         let t = self.t;
         if t == Type::SLP {
             let c = self.operands[0].borrow().get_value();
