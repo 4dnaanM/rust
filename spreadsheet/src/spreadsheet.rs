@@ -1,20 +1,20 @@
 use crate::equation::Equation;
-use crate::value::{SharedOperand,Value};
-use crate::utils::{Type,Coordinate,Status}; 
+use crate::utils::{Coordinate, Status, Type};
+use crate::value::{SharedOperand, Value};
 
 use std::collections::HashMap;
 
 // should expose set and get for cell value, and set for cell equation
-// all the traversal and updation methods should be defined here like findDownstream, toposort 
+// all the traversal and updation methods should be defined here like findDownstream, toposort
 pub struct SpreadSheet {
-    m: usize, 
-    n: usize, 
-    pub cells: Vec<Vec<SharedOperand>> 
-}	
+    m: usize,
+    n: usize,
+    pub cells: Vec<Vec<SharedOperand>>,
+}
 
-impl SpreadSheet {	
+impl SpreadSheet {
     pub fn new(m: usize, n: usize) -> Self {
-        let mut cells = Vec::<Vec::<SharedOperand>>::with_capacity(m);
+        let mut cells = Vec::<Vec<SharedOperand>>::with_capacity(m);
 
         for i in 0..m {
             let mut row = Vec::<SharedOperand>::with_capacity(n);
@@ -26,76 +26,89 @@ impl SpreadSheet {
 
         SpreadSheet { m, n, cells }
     }
-    pub fn get_cell_value(&self, row:usize, col:usize) -> Option<i32>{
-        assert!(col < self.n && row < self.m,"get_cell_value: Invalid cell coordinates ({},{})", row, col);
+    pub fn get_cell_value(&self, row: usize, col: usize) -> Option<i32> {
+        assert!(
+            col < self.n && row < self.m,
+            "get_cell_value: Invalid cell coordinates ({},{})",
+            row,
+            col
+        );
         Value::get_value(&(self.cells[row][col].borrow()))
     }
 
-    fn process_cell_equation(&self, row:usize, col:usize) -> Option<i32>{
-        assert!(col < self.n && row < self.m,"process_cell_equation: Invalid cell coordinates ({},{})", row, col);
+    fn process_cell_equation(&self, row: usize, col: usize) -> Option<i32> {
+        assert!(
+            col < self.n && row < self.m,
+            "process_cell_equation: Invalid cell coordinates ({},{})",
+            row,
+            col
+        );
         Value::get_equation(&(self.cells[row][col].borrow())).process_equation(self)
     }
 
-    fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize),i32>) {
-        if set.contains_key(&(row,col)) {
-            set.entry((row,col)).and_modify(|e| *e += 1);
+    fn get_indegrees(&self, row: usize, col: usize, set: &mut HashMap<(usize, usize), i32>) {
+        if set.contains_key(&(row, col)) {
+            set.entry((row, col)).and_modify(|e| *e += 1);
             return;
         }
         set.insert((row, col), if set.is_empty() { 0 } else { 1 });
-        let op = self.cells[row][col].borrow(); 
+        let op = self.cells[row][col].borrow();
         for neighbor in op.get_downstream_neighbors().borrow().iter() {
             let neighbor_ref = neighbor.borrow();
             let coord = neighbor_ref.get_coordinate();
-            let r = coord.0; 
+            let r = coord.0;
             let c = coord.1;
-            
+
             self.get_indegrees(r, c, set);
         }
         // print!("get_indegrees: Set: {:?}, ",set);
         // op.print();
     }
 
-    fn toposort(&self, mut in_degrees: HashMap<(usize,usize),i32>) -> Option<Vec<(usize,usize)>>{
+    fn toposort(
+        &self,
+        mut in_degrees: HashMap<(usize, usize), i32>,
+    ) -> Option<Vec<(usize, usize)>> {
         let mut queue = Vec::new();
         let mut order = Vec::new();
 
-        for ((row,col), indegree) in in_degrees.iter(){
+        for ((row, col), indegree) in in_degrees.iter() {
             if *indegree == 0 {
-                queue.push((*row,*col));
+                queue.push((*row, *col));
             }
         }
 
         while !queue.is_empty() {
             let (row, col) = queue.pop().unwrap();
-            order.push((row,col));
+            order.push((row, col));
 
             let op = self.cells[row][col].borrow();
 
             for neighbor in op.get_downstream_neighbors().borrow().iter() {
                 let neighbor_ref = neighbor.borrow();
                 let coord = neighbor_ref.get_coordinate();
-                let r = coord.0; 
+                let r = coord.0;
                 let c = coord.1;
                 *in_degrees.get_mut(&(r, c)).unwrap() -= 1;
-                if in_degrees[&(r,c)] == 0 {
-                    queue.push((r,c));
+                if in_degrees[&(r, c)] == 0 {
+                    queue.push((r, c));
                 }
             }
         }
 
         if in_degrees.len() != order.len() {
-            return None; 
+            return None;
         }
 
         Some(order)
     }
-    
-    fn do_operation(&mut self, row: usize, col: usize) -> bool{
+
+    fn do_operation(&mut self, row: usize, col: usize) -> bool {
         // print!("do_operation: ");
         // self.cells[row][col].borrow().print();
         // get all the affected cells and indegrees
         let mut in_degrees = HashMap::new();
-        self.get_indegrees(row,col, &mut in_degrees);
+        self.get_indegrees(row, col, &mut in_degrees);
         // print!("do_operation: In degrees: {:?}\n", in_degrees);
 
         //use indegrees to find toposort
@@ -107,67 +120,94 @@ impl SpreadSheet {
         let order = order.unwrap();
 
         // for each cell in the order, process the equation and set the value
-        for coord in order{
+        for coord in order {
             let val = self.process_cell_equation(coord.0, coord.1);
             self.cells[coord.0][coord.1].borrow_mut().set_value(val);
         }
-        
-        return true;
-    } 
 
-    pub fn set_cell_equation(&mut self, row:usize, col:usize, c1: Option<(usize,usize)>, c2: Option<(usize,usize)>, v1: Option<i32>, v2: Option<i32>, t:Type) -> Status {
-        
-        assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
-        if t== Type::SLP {
-            assert! (c1.is_none() ^ v1.is_none(), "set_cell_equation: Specify either a cell coordinate or a value");
-            assert! (c2.is_none() && v2.is_none(), "set_cell_equation: SLP equation should not have a second operand");
+        return true;
+    }
+
+    pub fn set_cell_equation(
+        &mut self,
+        row: usize,
+        col: usize,
+        c1: Option<(usize, usize)>,
+        c2: Option<(usize, usize)>,
+        v1: Option<i32>,
+        v2: Option<i32>,
+        t: Type,
+    ) -> Status {
+        assert!(
+            col < self.n && row < self.m,
+            "set_cell_equation: Invalid cell coordinates ({},{})",
+            row,
+            col
+        );
+        if t == Type::SLP {
+            assert!(
+                c1.is_none() ^ v1.is_none(),
+                "set_cell_equation: Specify either a cell coordinate or a value"
+            );
+            assert!(
+                c2.is_none() && v2.is_none(),
+                "set_cell_equation: SLP equation should not have a second operand"
+            );
             let op = match c1 {
                 Some(c) => self.cells[c.0][c.1].clone(),
-                None => SharedOperand::new(Value::new(None::<Coordinate>, v1))
+                None => SharedOperand::new(Value::new(None::<Coordinate>, v1)),
             };
 
-            let eq = Equation::new(Coordinate(row,col), Some(t), Some(vec![op]));
+            let eq = Equation::new(Coordinate(row, col), Some(t), Some(vec![op]));
             return self.set_cell_equation_from_eq(row, col, eq);
         }
 
-        assert!((c1.is_none() ^ v1.is_none()) || (c2.is_none() ^ v2.is_none()), "set_cell_equation: Specify either a cell coordinate or a value");
+        assert!(
+            (c1.is_none() ^ v1.is_none()) || (c2.is_none() ^ v2.is_none()),
+            "set_cell_equation: Specify either a cell coordinate or a value"
+        );
 
         let op1 = match c1 {
             Some(c) => self.cells[c.0][c.1].clone(),
-            None => SharedOperand::new(Value::new(None::<Coordinate>, v1))
+            None => SharedOperand::new(Value::new(None::<Coordinate>, v1)),
         };
         let op2 = match c2 {
             Some(c) => self.cells[c.0][c.1].clone(),
-            None => SharedOperand::new(Value::new(None::<Coordinate>, v2))
+            None => SharedOperand::new(Value::new(None::<Coordinate>, v2)),
         };
         let ops = vec![op1, op2];
 
-        let eq = Equation::new(Coordinate(row,col), Some(t), Some(ops));
+        let eq = Equation::new(Coordinate(row, col), Some(t), Some(ops));
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    pub fn set_cell_value(&mut self, row:usize, col:usize, v: i32) -> Status {
-        assert!(col < self.n && row < self.m,"set_cell_equation: Invalid cell coordinates ({},{})", row, col);
+    pub fn set_cell_value(&mut self, row: usize, col: usize, v: i32) -> Status {
+        assert!(
+            col < self.n && row < self.m,
+            "set_cell_equation: Invalid cell coordinates ({},{})",
+            row,
+            col
+        );
 
         let op1 = SharedOperand::new(Value::new(None::<Coordinate>, Some(v)));
         let op2 = SharedOperand::new(Value::new(None::<Coordinate>, Some(0)));
 
-        let eq = Equation::new(Coordinate(row,col), Some(Type::ADD), Some(vec![op1,op2]));
+        let eq = Equation::new(Coordinate(row, col), Some(Type::ADD), Some(vec![op1, op2]));
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    fn check_target_in_operands(&self, eq: &Equation, row: usize, col: usize) -> bool{
+    fn check_target_in_operands(&self, eq: &Equation, row: usize, col: usize) -> bool {
         let ops = eq.get_operands().clone();
         let cell_ref = self.cells[row][col].clone();
         if ops.iter().any(|op| op == &cell_ref) {
             return true;
         }
-        
+
         if eq.t == Type::SUM || eq.t == Type::AVG || eq.t == Type::DEV {
             let c1 = eq.get_operands()[0].borrow();
             let c2 = eq.get_operands()[1].borrow();
 
-            let y1 = c1.get_coordinate().0; 
+            let y1 = c1.get_coordinate().0;
             let x1 = c1.get_coordinate().1;
             let y2 = c2.get_coordinate().0;
             let x2 = c2.get_coordinate().1;
@@ -183,26 +223,33 @@ impl SpreadSheet {
         false
     }
 
-    pub fn set_cell_equation_from_eq(&mut self, row:usize, col:usize, eq: Equation) -> Status {
-
+    pub fn set_cell_equation_from_eq(&mut self, row: usize, col: usize, eq: Equation) -> Status {
         // print!("New equation: ");
         // eq.print();
         // println!();
 
         let cell_ref = self.cells[row][col].clone();
 
-        if self.check_target_in_operands(&eq, row, col) {return Status::ERR;}
+        if self.check_target_in_operands(&eq, row, col) {
+            return Status::ERR;
+        }
 
         let old_eq = cell_ref.borrow().get_equation().clone();
-        cell_ref.borrow_mut().set_equation(eq, cell_ref.clone(), self);
+        cell_ref
+            .borrow_mut()
+            .set_equation(eq, cell_ref.clone(), self);
 
         if !self.do_operation(row, col) {
-            {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone(),self);}
+            {
+                cell_ref
+                    .borrow_mut()
+                    .set_equation(old_eq, cell_ref.clone(), self);
+            }
             // println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
             // print!("Old equation: ");
             // cell_ref.borrow_mut().get_equation().print();
             // println!();
-            return Status::ERR; 
+            return Status::ERR;
         };
 
         Status::OK
@@ -218,7 +265,6 @@ impl SpreadSheet {
     //     }
     //     println!("----------------------------------------------------------------------");
     // }
-    
 }
 #[cfg(test)]
 mod tests {
@@ -247,15 +293,8 @@ mod tests {
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 20);
 
-        let status = spreadsheet.set_cell_equation(
-            0,
-            2,
-            Some((0, 0)),
-            Some((0, 1)),
-            None,
-            None,
-            Type::ADD,
-        );
+        let status =
+            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::ADD);
         assert_eq!(status, Status::OK);
         assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
     }
@@ -266,15 +305,8 @@ mod tests {
         spreadsheet.set_cell_value(0, 0, 50);
         spreadsheet.set_cell_value(0, 1, 20);
 
-        let status = spreadsheet.set_cell_equation(
-            0,
-            2,
-            Some((0, 0)),
-            Some((0, 1)),
-            None,
-            None,
-            Type::SUB,
-        );
+        let status =
+            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::SUB);
         assert_eq!(status, Status::OK);
         assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
     }
@@ -285,25 +317,9 @@ mod tests {
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 20);
 
-        spreadsheet.set_cell_equation(
-            0,
-            2,
-            Some((0, 0)),
-            Some((0, 1)),
-            None,
-            None,
-            Type::ADD,
-        );
+        spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::ADD);
 
-        let status = spreadsheet.set_cell_equation(
-            0,
-            0,
-            Some((0, 2)),
-            None,
-            None,
-            None,
-            Type::ADD,
-        );
+        let status = spreadsheet.set_cell_equation(0, 0, Some((0, 2)), None, None, None, Type::ADD);
         assert_eq!(status, Status::ERR); // Cycle detected
     }
 
@@ -316,5 +332,4 @@ mod tests {
         assert_eq!(status, Status::OK);
         assert_eq!(spreadsheet.get_cell_value(0, 1), Some(1));
     }
-
 }

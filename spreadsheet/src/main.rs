@@ -1,14 +1,14 @@
-mod utils;
-mod value;
 mod equation;
+mod interface;
 mod parser;
 mod spreadsheet;
-mod interface;
+mod utils;
+mod value;
 
+use spreadsheet::SpreadSheet;
 use std::env;
 use std::io;
 use std::io::Write;
-use spreadsheet::SpreadSheet;
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();
@@ -19,7 +19,7 @@ pub fn main() {
         println!("Expected two argument.");
         std::process::exit(1);
     }
-    
+
     let m: usize = match args[1].parse() {
         Ok(m) => m,
         Err(_) => {
@@ -36,7 +36,7 @@ pub fn main() {
         }
     };
 
-    let mut spreadsheet = SpreadSheet::new(m,n);
+    let mut spreadsheet = SpreadSheet::new(m, n);
 
     parser::print_output::print_sheet(1, 1, &spreadsheet, m, n);
     print!("[0.0] (ok) > ");
@@ -47,9 +47,20 @@ pub fn main() {
     let mut quit = false;
     'user_interaction: loop {
         let mut user_input = String::new();
-        io::stdin().read_line(&mut user_input).expect("Failed to read user input");
+        io::stdin()
+            .read_line(&mut user_input)
+            .expect("Failed to read user input");
         let user_input = user_input.trim();
-        interface::process_command(user_input, &mut spreadsheet, &mut row, &mut col, &mut enable_output, &mut quit, &m, &n);
+        interface::process_command(
+            user_input,
+            &mut spreadsheet,
+            &mut row,
+            &mut col,
+            &mut enable_output,
+            &mut quit,
+            &m,
+            &n,
+        );
         if quit {
             break 'user_interaction;
         }

@@ -12,21 +12,26 @@ fn column_number_to_letters(mut col: usize) -> String {
 }
 
 /// Prints a 10x10 grid with (start_row, start_col as the top-left cell)
-pub fn print_sheet(start_row: usize, start_col: usize, spreadsheet: &SpreadSheet, max_rows: usize, max_cols: usize) {
+pub fn print_sheet(
+    start_row: usize,
+    start_col: usize,
+    spreadsheet: &SpreadSheet,
+    max_rows: usize,
+    max_cols: usize,
+) {
     print!("\t");
-    for col in start_col..(start_col + 10).min(max_cols+1) {
+    for col in start_col..(start_col + 10).min(max_cols + 1) {
         print!("{}\t", column_number_to_letters(col));
     }
     println!();
 
-    for row in start_row..(start_row + 10).min(max_rows+1) {
+    for row in start_row..(start_row + 10).min(max_rows + 1) {
         print!("{}\t", row);
-        for col in start_col..(start_col + 10).min(max_cols+1) {
-            let value = spreadsheet.get_cell_value(row-1, col-1);
+        for col in start_col..(start_col + 10).min(max_cols + 1) {
+            let value = spreadsheet.get_cell_value(row - 1, col - 1);
             if value.is_none() {
                 print!("ERR\t");
-            }
-            else{
+            } else {
                 print!("{}\t", value.unwrap());
             }
         }
@@ -64,12 +69,12 @@ mod tests {
 
     #[test]
     fn test_column_number_to_letters_large_values() {
-        assert_eq!(column_number_to_letters(18278), "ZZZ");  // 26^3
+        assert_eq!(column_number_to_letters(18278), "ZZZ"); // 26^3
         assert_eq!(column_number_to_letters(18279), "AAAA");
     }
 
     #[test]
     fn test_column_number_to_letters_zero() {
-        assert_eq!(column_number_to_letters(0), "");  // Should return empty string
+        assert_eq!(column_number_to_letters(0), ""); // Should return empty string
     }
 }

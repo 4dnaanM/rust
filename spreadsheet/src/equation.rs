@@ -1,20 +1,23 @@
+use super::spreadsheet::SpreadSheet;
+use super::utils::Coordinate;
 use super::utils::Type;
 use super::value::SharedOperand;
-use super::utils::Coordinate;
-use super::spreadsheet::SpreadSheet;
 
 use std::thread::sleep;
-use std::time::Duration; 
-use std::{hash::{Hash, Hasher}, i32};
+use std::time::Duration;
+use std::{
+    hash::{Hash, Hasher},
+    i32,
+};
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Equation {
     pub coordinate: Coordinate,
     pub t: Type,
-    
+
     // each equation should own its list of operands. When equation changes for a cell, construct a whole new one
     operands: Vec<SharedOperand>, // References to operands
-    // when the equation is dropped, each reference is dropped, decreasing the ref count
+                                  // when the equation is dropped, each reference is dropped, decreasing the ref count
 }
 impl Hash for Equation {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -22,10 +25,12 @@ impl Hash for Equation {
     }
 }
 
-
 impl Equation {
-    pub fn new(coordinate: Coordinate, t: Option<Type>, operands: Option<Vec<SharedOperand>>) -> Self {
-        
+    pub fn new(
+        coordinate: Coordinate,
+        t: Option<Type>,
+        operands: Option<Vec<SharedOperand>>,
+    ) -> Self {
         let t = t.unwrap_or(Type::NUL);
         let operands = if t == Type::NUL {
             Vec::<SharedOperand>::new()
@@ -39,156 +44,152 @@ impl Equation {
             operands,
         }
     }
- 
+
     pub fn get_operands(&self) -> &Vec<SharedOperand> {
         &self.operands
     }
 
-    pub fn process_equation_silent(&self, spreadsheet_ref: &SpreadSheet) -> (Option<i32>, Option<i32>) {
+    pub fn process_equation_silent(
+        &self,
+        spreadsheet_ref: &SpreadSheet,
+    ) -> (Option<i32>, Option<i32>) {
         // println!("Processing equation silent: ");
         // self.print();
-        
+
         // just get the value, don't sleep
         // first ret value is none if any operand's value is None
         // operand is None means that it is an ERR cell
         // second ret value is time to sleep
-        
+
         let t = self.t;
         if t == Type::SLP {
             let c = self.operands[0].borrow().get_value();
 
             if c.is_none() {
-                return (None,None);
+                return (None, None);
             }
             assert!(c.unwrap() >= 0, "Invalid negative sleep time");
             // do nothing
-            return (c,c);
+            return (c, c);
         }
 
         let operands = &self.operands;
         if operands.len() == 0 {
-            return (Some(0),None);
+            return (Some(0), None);
         }
         let v1 = operands[0].borrow().get_value();
         if v1.is_none() {
-            return (None,None);
+            return (None, None);
         }
         let v1 = v1.unwrap();
 
         let v2 = operands[1].borrow().get_value();
         if v2.is_none() {
-            return (None,None);
+            return (None, None);
         }
         let v2 = v2.unwrap();
 
-        match t{
-            Type::ADD => (Some(v1 + v2),None),
-            Type::SUB => (Some(v1 - v2),None),
-            Type::MUL => (Some(v1 * v2),None),
-            Type::DIV => {
-                match v2 {
-                    0 => (None,None), 
-                    _ => (Some(v1 / v2),None)
-                }
+        match t {
+            Type::ADD => (Some(v1 + v2), None),
+            Type::SUB => (Some(v1 - v2), None),
+            Type::MUL => (Some(v1 * v2), None),
+            Type::DIV => match v2 {
+                0 => (None, None),
+                _ => (Some(v1 / v2), None),
             },
             Type::MIN => {
-
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
                 let x2 = operands[1].borrow().get_coordinate().1;
-                
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut min = i32::MAX; 
+
+                assert!(x1 <= x2 && y1 <= y2, "Invalid range!");
+                let mut min = i32::MAX;
                 for y in y1..=y2 {
                     for x in x1..=x2 {
-                        min = min.min(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MAX));
+                        min = min.min(spreadsheet_ref.get_cell_value(y, x).unwrap_or(i32::MAX));
                     }
                 }
-                (Some(min),None)
-            },
+                (Some(min), None)
+            }
             Type::MAX => {
-
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
                 let x2 = operands[1].borrow().get_coordinate().1;
-                
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut max = i32::MIN; 
+
+                assert!(x1 <= x2 && y1 <= y2, "Invalid range!");
+                let mut max = i32::MIN;
                 for y in y1..=y2 {
                     for x in x1..=x2 {
-                        max = max.max(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MIN));
+                        max = max.max(spreadsheet_ref.get_cell_value(y, x).unwrap_or(i32::MIN));
                     }
                 }
-                (Some(max),None)
-            },
+                (Some(max), None)
+            }
 
             Type::SUM => {
-
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
                 let x2 = operands[1].borrow().get_coordinate().1;
-                
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut sum = 0; 
+
+                assert!(x1 <= x2 && y1 <= y2, "Invalid range!");
+                let mut sum = 0;
                 for y in y1..=y2 {
                     for x in x1..=x2 {
-                        sum += spreadsheet_ref.get_cell_value(y,x).unwrap_or(0);
+                        sum += spreadsheet_ref.get_cell_value(y, x).unwrap_or(0);
                     }
                 }
-                (Some(sum),None)
-            },
+                (Some(sum), None)
+            }
             Type::AVG => {
-
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
                 let x2 = operands[1].borrow().get_coordinate().1;
 
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                assert!(x1 <= x2 && y1 <= y2, "Invalid range!");
                 let mut count = 0;
-                let mut sum = 0; 
+                let mut sum = 0;
                 for y in y1..=y2 {
                     for x in x1..=x2 {
-                        let v = spreadsheet_ref.get_cell_value(y,x);
+                        let v = spreadsheet_ref.get_cell_value(y, x);
                         sum += v.unwrap_or(0);
-                        count += if v.is_some() {1} else {0};
+                        count += if v.is_some() { 1 } else { 0 };
                     }
                 }
-                (Some(sum/count),None)
-            },
+                (Some(sum / count), None)
+            }
             Type::DEV => {
-
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
                 let x2 = operands[1].borrow().get_coordinate().1;
 
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
+                assert!(x1 <= x2 && y1 <= y2, "Invalid range!");
                 let mut count = 0;
-                let mut sum = 0; 
+                let mut sum = 0;
                 let mut sq = 0;
                 for y in y1..=y2 {
                     for x in x1..=x2 {
-                        let v = spreadsheet_ref.get_cell_value(y,x);
+                        let v = spreadsheet_ref.get_cell_value(y, x);
                         sum += v.unwrap_or(0);
-                        count += if v.is_some() {1} else {0};
-                        sq += v.unwrap_or(0)*v.unwrap_or(0);
+                        count += if v.is_some() { 1 } else { 0 };
+                        sq += v.unwrap_or(0) * v.unwrap_or(0);
                     }
                 }
                 let mean = sum as f64 / count as f64;
                 let mean_sq = sq as f64 / count as f64;
-                let std = (mean_sq - mean*mean).sqrt();
-                (Some(std as i32),None)
-            },
+                let std = (mean_sq - mean * mean).sqrt();
+                (Some(std as i32), None)
+            }
             _ => {
                 panic!("Unsupported operation to process equation");
             }
         }
     }
-    
+
     pub fn process_equation(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
         // println!("Processing equation: ");
         if self.operands.len() == 0 {
@@ -223,9 +224,8 @@ impl Equation {
     //     }
     //     else {
     //         print!("Equation: ({},{}) NUL",self.coordinate.0,self.coordinate.1);
-    //     }   
-    // }  
-    
+    //     }
+    // }
 }
 #[cfg(test)]
 mod tests {
@@ -240,109 +240,169 @@ mod tests {
     fn test_equation_addition() {
         let operand1 = create_mock_operand(5, (0, 0));
         let operand2 = create_mock_operand(3, (0, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::ADD), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::ADD),
+            Some(vec![operand1, operand2]),
+        );
 
-        let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(8),None));
+        let spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(8), None)
+        );
     }
 
     #[test]
     fn test_equation_subtraction() {
         let operand1 = create_mock_operand(10, (0, 0));
         let operand2 = create_mock_operand(4, (0, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::SUB), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::SUB),
+            Some(vec![operand1, operand2]),
+        );
 
-        let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(6),None));
+        let spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(6), None)
+        );
     }
 
     #[test]
     fn test_equation_multiplication() {
         let operand1 = create_mock_operand(7, (0, 0));
         let operand2 = create_mock_operand(6, (0, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::MUL), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::MUL),
+            Some(vec![operand1, operand2]),
+        );
 
-        let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(42),None));
+        let spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(42), None)
+        );
     }
 
     #[test]
     fn test_equation_division() {
         let operand1 = create_mock_operand(20, (0, 0));
         let operand2 = create_mock_operand(4, (0, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::DIV), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::DIV),
+            Some(vec![operand1, operand2]),
+        );
 
-        let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(5),None));
+        let spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(5), None)
+        );
     }
 
     #[test]
     fn test_equation_division_by_zero() {
         let operand1 = create_mock_operand(20, (0, 0));
         let operand2 = create_mock_operand(0, (0, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::DIV), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::DIV),
+            Some(vec![operand1, operand2]),
+        );
 
-        let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (None,None));
+        let spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (None, None));
     }
 
     #[test]
     fn test_equation_minimum() {
         let operand1 = create_mock_operand(0, (0, 0));
         let operand2 = create_mock_operand(0, (1, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::MIN), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::MIN),
+            Some(vec![operand1, operand2]),
+        );
 
-        let mut spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
+        let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 5);
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(3),None));
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(3), None)
+        );
     }
 
     #[test]
     fn test_equation_maximum() {
         let operand1 = create_mock_operand(0, (0, 0));
         let operand2 = create_mock_operand(0, (1, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::MAX), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::MAX),
+            Some(vec![operand1, operand2]),
+        );
 
-        let mut spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
+        let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 5);
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(10),None));
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(10), None)
+        );
     }
 
     #[test]
     fn test_equation_sum() {
         let operand1 = create_mock_operand(0, (0, 0));
         let operand2 = create_mock_operand(0, (1, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::SUM), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::SUM),
+            Some(vec![operand1, operand2]),
+        );
 
-        let mut spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
+        let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 5);
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(26),None));
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(26), None)
+        );
     }
 
     #[test]
     fn test_equation_average() {
         let operand1 = create_mock_operand(0, (0, 0));
         let operand2 = create_mock_operand(0, (1, 1));
-        let equation = Equation::new(Coordinate(0, 2), Some(Type::AVG), Some(vec![operand1, operand2]));
+        let equation = Equation::new(
+            Coordinate(0, 2),
+            Some(Type::AVG),
+            Some(vec![operand1, operand2]),
+        );
 
-        let mut spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
+        let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 5);
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(6),None));
+        assert_eq!(
+            equation.process_equation_silent(&spreadsheet),
+            (Some(6), None)
+        );
     }
 }

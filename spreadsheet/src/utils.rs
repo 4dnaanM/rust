@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Hash, Eq, PartialEq, Debug)]
-pub struct Coordinate (pub usize, pub usize);
+pub struct Coordinate(pub usize, pub usize);
 impl From<(usize, usize)> for Coordinate {
     fn from((row, col): (usize, usize)) -> Self {
         Coordinate(row, col)
@@ -8,16 +8,16 @@ impl From<(usize, usize)> for Coordinate {
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub enum Type {
     NUL,
-    ADD, 
-    SUB, 
-    MUL, 
+    ADD,
+    SUB,
+    MUL,
     DIV,
-    MIN, 
+    MIN,
     MAX,
     SUM,
     AVG,
     DEV,
-    SLP
+    SLP,
 }
 
 impl Type {
@@ -49,7 +49,7 @@ impl Type {
             "AVG" => Type::AVG,
             "STDEV" => Type::DEV,
             "SLEEP" => Type::SLP,
-            _ => panic!("Unknown type: {}", s)
+            _ => panic!("Unknown type: {}", s),
         }
     }
 }
@@ -57,5 +57,5 @@ impl Type {
 #[derive(Eq, PartialEq, Debug)]
 pub enum Status {
     OK,
-    ERR
+    ERR,
 }

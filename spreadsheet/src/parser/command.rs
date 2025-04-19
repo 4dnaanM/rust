@@ -37,7 +37,9 @@ impl RangeCommand {
         // Both operands must be cells and must make a valid range
         match (self.operand_1, self.operand_2) {
             (Value::Cell(cell_1), Value::Cell(cell_2)) => {
-                cell_1.is_valid_cell(max_rows, max_cols) && cell_2.is_valid_cell(max_rows, max_cols) && cell_1.compare_cells(&cell_2)
+                cell_1.is_valid_cell(max_rows, max_cols)
+                    && cell_2.is_valid_cell(max_rows, max_cols)
+                    && cell_1.compare_cells(&cell_2)
             }
             _ => false,
         }
@@ -74,17 +76,21 @@ impl ArithmeticCommand {
         }
 
         match (&self.operator, self.operand_2) {
-            (Some(_), Some(operand_2)) => match operand_2{
+            (Some(_), Some(operand_2)) => match operand_2 {
                 Value::Cell(cell) => {
                     if !cell.is_valid_cell(max_rows, max_cols) {
                         return false;
                     }
-                },
-                Value::Constant(_) => ()
+                }
+                Value::Constant(_) => (),
             },
-            (None, Some(_)) => {return false;},
-            (Some(_), None) => {return false;},
-            (None, None) => ()
+            (None, Some(_)) => {
+                return false;
+            }
+            (Some(_), None) => {
+                return false;
+            }
+            (None, None) => (),
         };
 
         return true;
@@ -102,24 +108,28 @@ impl UserInteractionCommand {
     pub fn is_valid_ui_command(&self, max_rows: usize, max_cols: usize) -> bool {
         match self.scroll_to_cell {
             Some(cell) => cell.is_valid_cell(max_rows, max_cols),
-            None => true
+            None => true,
         }
     }
 }
 
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct SleepCommand {
     pub target_cell: Value,
-    pub value: Value
+    pub value: Value,
 }
 
 impl SleepCommand {
     pub fn is_valid_sleep_command(&self, max_rows: usize, max_cols: usize) -> bool {
         match (self.target_cell, self.value) {
-           (Value::Cell(target_cell), Value::Cell(cell)) => target_cell.is_valid_cell(max_rows, max_cols) && cell.is_valid_cell(max_rows, max_cols),
-           (Value::Cell(target_cell), Value::Constant(_)) => target_cell.is_valid_cell(max_rows, max_cols),
-           _ => false
+            (Value::Cell(target_cell), Value::Cell(cell)) => {
+                target_cell.is_valid_cell(max_rows, max_cols)
+                    && cell.is_valid_cell(max_rows, max_cols)
+            }
+            (Value::Cell(target_cell), Value::Constant(_)) => {
+                target_cell.is_valid_cell(max_rows, max_cols)
+            }
+            _ => false,
         }
     }
 }
@@ -248,7 +258,7 @@ mod tests {
         };
         assert!(cmd.is_valid_arithmetic_command(max_rows, max_cols));
     }
-    
+
     #[test]
     fn test_is_valid_arithmetic_command_returns_false_target_constant() {
         let max_rows = 999;

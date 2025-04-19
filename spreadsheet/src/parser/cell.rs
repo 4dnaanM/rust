@@ -13,7 +13,7 @@ impl Cell {
 
     /// Returns true if the cell is within the spreadsheet's bound i.e row <= 999 and col <= 18278
     pub fn is_valid_cell(&self, max_rows: usize, max_cols: usize) -> bool {
-        self.row >=1 && self.row <= max_rows && self.col >= 1 && self.col <= max_cols 
+        self.row >= 1 && self.row <= max_rows && self.col >= 1 && self.col <= max_cols
     }
 }
 
@@ -47,14 +47,12 @@ pub fn convert_string_to_cell(cell: &str) -> Option<Cell> {
     // Parses the row number of the cell
     match cell[row_start..].parse::<usize>() {
         Ok(row) => {
-            let cell_struct = Cell {row: row, col: col};
+            let cell_struct = Cell { row: row, col: col };
             Some(cell_struct)
         }
         Err(_) => None,
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -62,12 +60,12 @@ mod tests {
 
     #[test]
     fn test_compare_cells_returns_true() {
-        let cell_1 = Cell {row: 5, col: 5};
+        let cell_1 = Cell { row: 5, col: 5 };
         let cell_2 = vec![
-            Cell { row: 6, col: 6 },    // Reactangle range
-            Cell { row: 5, col: 6 },    // Row range
-            Cell { row: 6, col: 5 },    // Column range
-            Cell { row: 5, col: 5 },    // One cell ranges are valid
+            Cell { row: 6, col: 6 }, // Reactangle range
+            Cell { row: 5, col: 6 }, // Row range
+            Cell { row: 6, col: 5 }, // Column range
+            Cell { row: 5, col: 5 }, // One cell ranges are valid
         ];
         for cell in cell_2 {
             assert!(cell_1.compare_cells(&cell));
@@ -76,11 +74,11 @@ mod tests {
 
     #[test]
     fn test_compare_cells_returns_false() {
-        let cell_1 = Cell {row: 5, col: 5};
+        let cell_1 = Cell { row: 5, col: 5 };
         let cell_2 = vec![
-            Cell { row: 4, col: 4 },    // Reactangle range
-            Cell { row: 5, col: 4 },    // Row range
-            Cell { row: 4, col: 5 },    // Column range
+            Cell { row: 4, col: 4 }, // Reactangle range
+            Cell { row: 5, col: 4 }, // Row range
+            Cell { row: 4, col: 5 }, // Column range
         ];
         for cell in cell_2 {
             assert!(!cell_1.compare_cells(&cell));
@@ -91,18 +89,30 @@ mod tests {
     fn test_is_valid_cell_returns_some() {
         let max_rows = 999;
         let max_cols = 18278;
-        
+
         let valid_cells = vec![
-            Cell { row: 1, col: 1 },        // Top-leftmost cell of the spreadsheet
-            Cell { row: 100, col: 100 },    // Arbitrary cell in the workseet
-            Cell { row: 999, col: 18278 },  // Bottom-rightmost cell in the spreadsheet 
+            Cell { row: 1, col: 1 },     // Top-leftmost cell of the spreadsheet
+            Cell { row: 100, col: 100 }, // Arbitrary cell in the workseet
+            Cell {
+                row: 999,
+                col: 18278,
+            }, // Bottom-rightmost cell in the spreadsheet
         ];
 
         let invalid_cells = vec![
-            Cell { row: 0, col: 0 },            // Spreadsheet is (1,1)-indexed
-            Cell { row: 1000, col: 100 },       // Row is out of bounds
-            Cell { row: 100, col: 100000 },      // Column in out of bounds
-            Cell { row: 1000, col: 100000 }     // Both rows and columns are out of bound
+            Cell { row: 0, col: 0 }, // Spreadsheet is (1,1)-indexed
+            Cell {
+                row: 1000,
+                col: 100,
+            }, // Row is out of bounds
+            Cell {
+                row: 100,
+                col: 100000,
+            }, // Column in out of bounds
+            Cell {
+                row: 1000,
+                col: 100000,
+            }, // Both rows and columns are out of bound
         ];
 
         for cell in valid_cells {
@@ -116,10 +126,7 @@ mod tests {
 
     #[test]
     fn test_convert_string_to_cell_valid() {
-        assert_eq!(
-            convert_string_to_cell("A1"),
-            Some(Cell { row: 1, col: 1 })
-        );
+        assert_eq!(convert_string_to_cell("A1"), Some(Cell { row: 1, col: 1 }));
         assert_eq!(
             convert_string_to_cell("Z99"),
             Some(Cell { row: 99, col: 26 })
@@ -140,11 +147,11 @@ mod tests {
 
     #[test]
     fn test_convert_string_to_cell_invalid() {
-        assert_eq!(convert_string_to_cell("123"), None);        // No column
-        assert_eq!(convert_string_to_cell("AB"), None);         // No row
-        assert_eq!(convert_string_to_cell("A0"), Some(Cell { row: 0, col: 1 }));    // Valid parse but invalidated by is_valid_cell
-        assert_eq!(convert_string_to_cell(""), None);           // Empty string
-        assert_eq!(convert_string_to_cell("A-1"), None);        // String to integer parsing failed
-        assert_eq!(convert_string_to_cell("A1.2"), None);        // String to integer parsing failed
+        assert_eq!(convert_string_to_cell("123"), None); // No column
+        assert_eq!(convert_string_to_cell("AB"), None); // No row
+        assert_eq!(convert_string_to_cell("A0"), Some(Cell { row: 0, col: 1 })); // Valid parse but invalidated by is_valid_cell
+        assert_eq!(convert_string_to_cell(""), None); // Empty string
+        assert_eq!(convert_string_to_cell("A-1"), None); // String to integer parsing failed
+        assert_eq!(convert_string_to_cell("A1.2"), None); // String to integer parsing failed
     }
 }

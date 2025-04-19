@@ -1,10 +1,10 @@
+use crate::equation::Equation;
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::Coordinate;
-use crate::equation::Equation;
 use crate::utils::Type;
 
+use std::cell::{Ref, RefCell, RefMut};
 use std::hash::{Hash, Hasher};
-use std::cell::{RefCell, Ref, RefMut};
 use std::rc::Rc;
 // use std::collections::HashSet;
 
@@ -15,12 +15,12 @@ use std::rc::Rc;
 struct Cell {
     pub coordinate: Coordinate,
     pub value: Option<i32>,
-    
+
     // each cell owns its equation.
     pub equation: Box<Equation>,
-    // The equation contains references to other cells in its operands list 
+    // The equation contains references to other cells in its operands list
     // When the cell is dropped, the equation is dropped too
-    
+
     // references to other cells that depend on this cell
     // pub downstream_neighbors: RefCell<HashSet<SharedOperand>>,
     pub downstream_neighbors: RefCell<Vec<SharedOperand>>,
@@ -43,28 +43,37 @@ impl Cell {
         }
     }
 
-    fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand, spreadsheet_ref: &SpreadSheet) {
+    fn set_equation(
+        &mut self,
+        eq: Equation,
+        self_ref: SharedOperand,
+        spreadsheet_ref: &SpreadSheet,
+    ) {
         // println!("Cell: set_equation: ");
         // eq.print();
         // println!();
-    
+
         let old_operands = self.equation.get_operands().clone();
-    
+
         for operand in old_operands {
             if let Value::Cell(ref neighbor) = *operand.borrow() {
                 let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
                 neighbors.retain(|x| !Rc::ptr_eq(&x.0, &self_ref.0));
             }
         }
-        
+
         self.value = eq.process_equation_silent(spreadsheet_ref).0;
-    
+
         self.equation = Box::new(eq);
-    
+
         let new_operands = self.equation.get_operands().clone();
 
-        if self.equation.t==Type::SUM || self.equation.t == Type::AVG || self.equation.t == Type::DEV || self.equation.t == Type::MIN || self.equation.t == Type::MAX {
-            
+        if self.equation.t == Type::SUM
+            || self.equation.t == Type::AVG
+            || self.equation.t == Type::DEV
+            || self.equation.t == Type::MIN
+            || self.equation.t == Type::MAX
+        {
             let y1 = new_operands[0].borrow().get_coordinate().0;
             let x1 = new_operands[0].borrow().get_coordinate().1;
             let y2 = new_operands[1].borrow().get_coordinate().0;
@@ -75,24 +84,26 @@ impl Cell {
                     let current = &spreadsheet_ref.cells[y][x];
                     let neighbor = current.borrow();
                     if let Value::Cell(ref cell) = *neighbor {
-                        cell.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                        cell.downstream_neighbors
+                            .borrow_mut()
+                            .push(self_ref.clone());
                     }
                 }
             }
-        }
-
-        else{
+        } else {
             for operand in new_operands {
                 if let Value::Cell(ref neighbor) = *operand.borrow() {
-                    neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
+                    neighbor
+                        .downstream_neighbors
+                        .borrow_mut()
+                        .push(self_ref.clone());
                     // print!("Added to downstream neighbors of: ({},{})", neighbor.coordinate.0, neighbor.coordinate.1);
                 }
             }
         }
-        // self.print(); 
-    
+        // self.print();
     }
-    
+
     // fn print (&self) {
     //     print!("C({},{})->{}, ",self.coordinate.0,self.coordinate.1,self.value);
     //     self.equation.print();
@@ -106,18 +117,14 @@ impl Cell {
     // }
 }
 
-
-
 #[derive(Eq, PartialEq, Clone, Hash)]
 struct Constant {
     // coordinate: Coordinate,
     value: i32,
-} 
+}
 impl Constant {
     fn new(val: i32) -> Self {
-        Constant {
-            value: val,
-        }
+        Constant { value: val }
     }
     // fn print (&self) {
     //     println!("V->{}",self.value);
@@ -127,90 +134,92 @@ impl Constant {
 #[derive(Eq, PartialEq, Clone)]
 pub enum Value {
     // it should own the cell or const
-    Cell(Cell), 
-    Constant(Constant)
+    Cell(Cell),
+    Constant(Constant),
 }
 
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Cell(cell) => cell.hash(state),
-            Value::Constant(value) => value.hash(state)
+            Value::Constant(value) => value.hash(state),
         }
     }
 }
 
 impl Value {
-    
-    pub fn new<U : Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
+    pub fn new<U: Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
         match input {
             None => Value::Constant(Constant::new(val.unwrap_or(0))),
             Some(i) => {
                 let coord = i.into();
-                let (row,col) = (coord.0, coord.1);
-                let mut ans = Value::Cell(Cell::new((row,col)));
+                let (row, col) = (coord.0, coord.1);
+                let mut ans = Value::Cell(Cell::new((row, col)));
                 match val {
                     Some(v) => ans.set_value(Some(v)),
                     None => {}
                 }
-                return ans
+                return ans;
             }
         }
     }
-        
+
     // pub fn print (&self) {
     //     match self {
     //         Value::Cell(cell) => cell.print(),
     //         Value::Value(value) => value.print()
     //     }
     // }
-    
+
     pub fn get_value(&self) -> Option<i32> {
         match self {
             Value::Cell(cell) => cell.value,
-            Value::Constant(val) => Some(val.value)
+            Value::Constant(val) => Some(val.value),
         }
     }
 
     pub fn get_equation(&self) -> Equation {
         match self {
             Value::Cell(cell) => (*cell.equation).clone(),
-            Value::Constant(_) => panic!("Value does not have an equation!")
+            Value::Constant(_) => panic!("Value does not have an equation!"),
         }
     }
 
     pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand>> {
         match self {
             Value::Cell(cell) => cell.downstream_neighbors.clone(),
-            Value::Constant(_) => panic!("Value does not have downstream neighbors!")
+            Value::Constant(_) => panic!("Value does not have downstream neighbors!"),
         }
     }
-    
+
     pub fn get_coordinate(&self) -> &Coordinate {
         match self {
             Value::Cell(cell) => &cell.coordinate,
-            Value::Constant(_) => panic!("Value does not have a coordinate!")
+            Value::Constant(_) => panic!("Value does not have a coordinate!"),
         }
     }
 
     pub fn set_value(&mut self, val: Option<i32>) {
         match self {
             Value::Cell(cell) => cell.value = val,
-            Value::Constant(value) => value.value = val.unwrap_or(0)
+            Value::Constant(value) => value.value = val.unwrap_or(0),
         }
     }
 
-    pub fn set_equation(&mut self, eq: Equation, self_ref: SharedOperand, spreadsheet_ref: &SpreadSheet) {
+    pub fn set_equation(
+        &mut self,
+        eq: Equation,
+        self_ref: SharedOperand,
+        spreadsheet_ref: &SpreadSheet,
+    ) {
         match self {
             Value::Cell(cell) => {
-                cell.set_equation(eq,self_ref,spreadsheet_ref);
-            },
-            Value::Constant(_) => panic!("Value can't have an equation!")
+                cell.set_equation(eq, self_ref, spreadsheet_ref);
+            }
+            Value::Constant(_) => panic!("Value can't have an equation!"),
         }
     }
-
 }
-
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct SharedOperand(pub Rc<RefCell<Value>>);
@@ -304,7 +313,10 @@ mod tests {
         let cell2 = Cell::new(coord2);
         let shared_operand = SharedOperand::new(Value::Cell(cell2));
 
-        cell1.downstream_neighbors.borrow_mut().push(shared_operand.clone());
+        cell1
+            .downstream_neighbors
+            .borrow_mut()
+            .push(shared_operand.clone());
         assert_eq!(cell1.downstream_neighbors.borrow().len(), 1);
     }
 }
