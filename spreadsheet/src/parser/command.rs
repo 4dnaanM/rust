@@ -142,36 +142,6 @@ pub enum Command {
     SleepCommand(SleepCommand),
 }
 
-impl Command {
-    /// Prints the command. For Debug purpose
-    #[cfg(debug_assertions)]
-    pub fn print_command(&self) {
-        match self {
-            Command::RangeCommand(cmd) => {
-                println!("RangeCommand:");
-                println!("  target_cell: {:?}", cmd.target_cell);
-                println!("  function: {}", cmd.function);
-                println!("  operand_1: {:?}", cmd.operand_1);
-                println!("  operand_2: {:?}", cmd.operand_2);
-            }
-            Command::ArithmeticCommand(cmd) => {
-                println!("ArithmeticCommand:");
-                println!("  target_cell: {:?}", cmd.target_cell);
-                println!("  operand_1: {:?}", cmd.operand_1);
-                println!("  operator: {:?}", cmd.operator);
-                println!("  operand_2: {:?}", cmd.operand_2);
-            }
-            Command::UserInteractionCommand(cmd) => {
-                println!("UserInteractionCommand:");
-                println!("  command: {}", cmd.command);
-            }
-            Command::SleepCommand(_) => {
-                println!("SleepCommand");
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -299,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_arithmetic_command_invalid_cell() {
+    fn test_is_valid_arithmetic_command_returns_false_invalid_cell() {
         let max_rows = 999;
         let max_cols = 18278;
         let cmd = ArithmeticCommand {
@@ -309,5 +279,67 @@ mod tests {
             operand_2: Some(Value::Constant(5)),
         };
         assert!(!cmd.is_valid_arithmetic_command(max_rows, max_cols));
+    }
+
+    #[test]
+    fn test_is_valid_sleep_command_returns_true() {
+        let max_rows = 999;
+        let max_cols = 18278;
+        let cmd = SleepCommand {
+            target_cell: Value::Cell(Cell { row: 2, col: 2 }),
+            value: Value::Cell(Cell { row: 20, col: 1 }),
+        };
+        assert!(cmd.is_valid_sleep_command(max_rows, max_cols));
+    }
+
+    #[test]
+    fn test_is_valid_sleep_command_returns_false_target_is_constant() {
+        let cmd = SleepCommand {
+            target_cell: Value::Constant(5),
+            value: Value::Constant(10),
+        };
+        assert!(!cmd.is_valid_sleep_command(10, 10));
+    }
+
+    #[test]
+    fn test_is_valid_sleep_command_returns_false_target_cell_invalid() {
+        let cmd = SleepCommand {
+            target_cell: Value::Cell(Cell { row: 0, col: 0 }),
+            value: Value::Constant(10),
+        };
+        assert!(!cmd.is_valid_sleep_command(10, 10));
+    }
+
+    #[test]
+    fn test_is_valid_ui_command_returns_true_movement_commands() {
+        let max_rows = 999;
+        let max_cols = 18278;
+        let cmd = UserInteractionCommand {
+            command: "w".to_string(),
+            scroll_to_cell: None,
+        };
+        assert!(cmd.is_valid_ui_command(max_rows, max_cols));
+    }
+
+    #[test]
+    fn test_is_valid_ui_command_returns_true_scroll_command() {
+        let max_rows = 999;
+        let max_cols = 18278;
+        let cmd = UserInteractionCommand {
+            command: "scroll_to".to_string(),
+            scroll_to_cell: Some(Cell { row: 10, col: 10 }),
+        };
+        assert!(cmd.is_valid_ui_command(max_rows, max_cols));
+    }
+
+    #[test]
+    fn test_is_valid_ui_command_returns_false_invalid_cell() {
+        let max_rows = 10;
+        let max_cols = 10;
+        let cmd = UserInteractionCommand {
+            command: "scroll_to".to_string(),
+            scroll_to_cell: Some(Cell { row: 10, col: 11 }),
+        };
+        assert!(!cmd.is_valid_ui_command(max_rows, max_cols));
     }
 }

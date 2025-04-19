@@ -1,4 +1,4 @@
 pub enum Error {
-    RegexError(String),
-    InvalidInput(String),
+    RegexError,
+    InvalidInput,
 }

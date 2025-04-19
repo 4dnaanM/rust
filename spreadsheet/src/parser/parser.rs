@@ -38,13 +38,13 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         "{}|{}|{}|{}",
         ui_command, sleep_command, range_cmd, arithmetic_cmd
     );
-    let regex = Regex::new(&command).map_err(|e| Error::RegexError(e.to_string()))?;
+    let regex = Regex::new(&command).map_err(|_| Error::RegexError)?;
 
     let captured_groups = regex.captures(user_command);
 
     // If none of the groups are captured, then the user input in invalid
     let Some(captures) = captured_groups else {
-        return Err(Error::InvalidInput(String::from("Invalid user input")));
+        return Err(Error::InvalidInput);
     };
 
     // First, check for UI command
@@ -59,18 +59,18 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if captures.name("SCROLL_TO_CELL").is_some() {
         let scroll_to_cell_str = captures
             .name("SCROLL_TO_CELL")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let scroll_to_cell = match convert_string_to_cell(scroll_to_cell_str) {
             Some(scroll_to_cell) => scroll_to_cell,
-            None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+            None => return Err(Error::InvalidInput),
         };
         let user_interaction = UserInteractionCommand {
             command: String::from("scroll_to"),
             scroll_to_cell: Some(scroll_to_cell),
         };
         if !user_interaction.is_valid_ui_command(max_rows, max_cols) {
-            return Err(Error::InvalidInput("Invalid user input".to_string()));
+            return Err(Error::InvalidInput);
         }
         return Ok(Command::UserInteractionCommand(user_interaction));
     }
@@ -83,22 +83,22 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if is_sleep_command {
         let sleep_target_cell_str = captures
             .name("SLEEP_TARGET_CELL")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let sleep_target_cell = match convert_string_to_cell(sleep_target_cell_str) {
             Some(target_cell) => target_cell,
-            None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+            None => return Err(Error::InvalidInput),
         };
 
         let sleep_value_str = captures
             .name("SLEEP_VALUE")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let sleep_value = match sleep_value_str.parse::<i32>() {
             Ok(constant) => Value::Constant(constant),
             Err(_) => match convert_string_to_cell(sleep_value_str) {
                 Some(sleep_value) => Value::Cell(sleep_value),
-                None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+                None => return Err(Error::InvalidInput),
             },
         };
 
@@ -107,7 +107,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
             value: sleep_value,
         };
         if !sleep_command.is_valid_sleep_command(max_rows, max_cols) {
-            return Err(Error::InvalidInput("Invalid user input".to_string()));
+            return Err(Error::InvalidInput);
         }
         return Ok(Command::SleepCommand(sleep_command));
     }
@@ -123,43 +123,43 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if is_range_command {
         let target_cell_str = captures
             .name("TARGET_CELL_RANGE")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let target_cell = match convert_string_to_cell(target_cell_str) {
             Some(target_cell) => target_cell,
-            None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+            None => return Err(Error::InvalidInput),
         };
 
         let operand_1_str = captures
             .name("OPERAND_1_RANGE")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let operand_1 = match convert_string_to_cell(operand_1_str) {
             Some(operand_1) => operand_1,
-            None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+            None => return Err(Error::InvalidInput),
         };
 
         let operand_2_str = captures
             .name("OPERAND_2_RANGE")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let operand_2 = match convert_string_to_cell(operand_2_str) {
             Some(operand_2) => operand_2,
-            None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+            None => return Err(Error::InvalidInput),
         };
 
         let cmd = RangeCommand {
             target_cell: Value::Cell(target_cell),
             function: captures
                 .name("FUNCTION")
-                .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+                .ok_or_else(|| Error::InvalidInput)?
                 .as_str()
                 .to_string(),
             operand_1: Value::Cell(operand_1),
             operand_2: Value::Cell(operand_2),
         };
         if !cmd.is_valid_range_command(max_rows, max_cols) {
-            return Err(Error::InvalidInput("Invalid user input".to_string()));
+            return Err(Error::InvalidInput);
         }
         return Ok(Command::RangeCommand(cmd));
     }
@@ -176,34 +176,34 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if required_all_present {
         let target_cell_str = captures
             .name("TARGET_CELL_ARTH")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let target_cell = match convert_string_to_cell(target_cell_str) {
             Some(target_cell) => target_cell,
-            None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+            None => return Err(Error::InvalidInput),
         };
 
         let operand_1_str = captures
             .name("OPERAND_1_ARTH")
-            .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+            .ok_or_else(|| Error::InvalidInput)?
             .as_str();
         let operand_1 = match operand_1_str.parse::<i32>() {
             Ok(constant) => Value::Constant(constant),
             Err(_) => match convert_string_to_cell(operand_1_str) {
                 Some(operand_1) => Value::Cell(operand_1),
-                None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+                None => return Err(Error::InvalidInput),
             },
         };
         if optional_all_present {
             let operand_2_str = captures
                 .name("OPERAND_2_ARTH")
-                .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+                .ok_or_else(|| Error::InvalidInput)?
                 .as_str();
             let operand_2 = match operand_2_str.parse::<i32>() {
                 Ok(constant) => Value::Constant(constant),
                 Err(_) => match convert_string_to_cell(operand_2_str) {
                     Some(operand_2) => Value::Cell(operand_2),
-                    None => return Err(Error::InvalidInput(String::from("Invalid user input"))),
+                    None => return Err(Error::InvalidInput),
                 },
             };
             let cmd = ArithmeticCommand {
@@ -212,14 +212,14 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
                 operator: Some(
                     captures
                         .name("OPERATOR")
-                        .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
+                        .ok_or_else(|| Error::InvalidInput)?
                         .as_str()
                         .to_string(),
                 ),
                 operand_2: Some(operand_2),
             };
             if !cmd.is_valid_arithmetic_command(max_rows, max_cols) {
-                return Err(Error::InvalidInput("Invalid user input".to_string()));
+                return Err(Error::InvalidInput);
             }
             return Ok(Command::ArithmeticCommand(cmd));
         } else {
@@ -230,14 +230,14 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
                 operand_2: None,
             };
             if !cmd.is_valid_arithmetic_command(max_rows, max_cols) {
-                return Err(Error::InvalidInput("Invalid user input".to_string()));
+                return Err(Error::InvalidInput);
             }
             return Ok(Command::ArithmeticCommand(cmd));
         }
     }
 
     // The command does not match the regex. Therefore, invalid command
-    Err(Error::InvalidInput("Invalid user input".to_string()))
+    Err(Error::InvalidInput)
 }
 
 #[cfg(test)]
@@ -245,11 +245,51 @@ mod tests {
     use super::*;
     const MAX_ROWS: usize = 999;
     const MAX_COLS: usize = 18278;
+
     #[test]
     fn test_ui_command() {
         let input = "w";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
         assert!(matches!(result, Ok(Command::UserInteractionCommand(_))));
+    }
+
+    #[test]
+    fn test_sleep_command_valid() {
+        let input = "A1 = SLEEP(B1)";
+        let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
+        assert!(matches!(result, Ok(Command::SleepCommand(_))));
+    }
+
+    // Test invalid sleep command (invalid cell in value)
+    #[test]
+    fn test_sleep_command_invalid_value() {
+        let input = "A1 = SLEEP(ABC)";
+        let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
+        assert!(matches!(result, Err(Error::InvalidInput)));
+    }
+
+    // Test invalid sleep command (invalid format)
+    #[test]
+    fn test_sleep_command_invalid_format() {
+        let input = "A1 = SLEEP";
+        let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
+        assert!(matches!(result, Err(Error::InvalidInput)));
+    }
+
+    // Test UI command with scroll
+    #[test]
+    fn test_ui_command_scroll_to_cell() {
+        let input = "scroll_to A1";
+        let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
+        assert!(matches!(result, Ok(Command::UserInteractionCommand(_))));
+    }
+
+    // Test invalid UI command (unsupported command)
+    #[test]
+    fn test_invalid_ui_command() {
+        let input = "unsupported_command";
+        let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
+        assert!(matches!(result, Err(Error::InvalidInput)));
     }
 
     #[test]
@@ -263,7 +303,7 @@ mod tests {
     fn test_range_command_invalid_cell() {
         let input = "Z0 = MAX(XYZ:123)";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Err(Error::InvalidInput(_))));
+        assert!(matches!(result, Err(Error::InvalidInput)));
     }
 
     #[test]
@@ -291,13 +331,13 @@ mod tests {
     fn test_invalid_command_format() {
         let input = "run macro";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Err(Error::InvalidInput(_))));
+        assert!(matches!(result, Err(Error::InvalidInput)));
     }
 
     #[test]
     fn test_invalid_operator_expression() {
         let input = "A1 = B1 +";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Err(Error::InvalidInput(_))));
+        assert!(matches!(result, Err(Error::InvalidInput)));
     }
 }

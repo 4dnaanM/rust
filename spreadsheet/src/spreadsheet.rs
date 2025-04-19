@@ -79,7 +79,6 @@ impl SpreadSheet {
         }
 
         while let Some((row, col)) = queue.pop() {
-            
             order.push((row, col));
 
             let op = self.cells[row][col].borrow();
