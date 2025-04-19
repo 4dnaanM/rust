@@ -1,13 +1,11 @@
 use super::utils::Type;
-use super::value::{SharedOperand,Value};
+use super::value::SharedOperand;
 use super::utils::Coordinate;
 use super::spreadsheet::SpreadSheet;
 
 use std::thread::sleep;
 use std::time::Duration; 
 use std::{hash::{Hash, Hasher}, i32};
-use std::rc::Rc;
-use std::cell::RefCell;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct Equation {
@@ -46,47 +44,51 @@ impl Equation {
         &self.operands
     }
 
-    pub fn process_equation_silent(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
+    pub fn process_equation_silent(&self, spreadsheet_ref: &SpreadSheet) -> (Option<i32>, Option<i32>) {
         // println!("Processing equation silent: ");
         // self.print();
+        
         // just get the value, don't sleep
+        // first ret value is none if any operand's value is None
+        // operand is None means that it is an ERR cell
+        // second ret value is time to sleep
         
         let t = self.t;
         if t == Type::SLP {
             let c = self.operands[0].borrow().get_value();
 
             if c.is_none() {
-                return None;
+                return (None,None);
             }
             assert!(c.unwrap() >= 0, "Invalid negative sleep time");
             // do nothing
-            return c;
+            return (c,c);
         }
 
         let operands = &self.operands;
         if operands.len() == 0 {
-            return Some(0);
+            return (Some(0),None);
         }
         let v1 = operands[0].borrow().get_value();
         if v1.is_none() {
-            return None;
+            return (None,None);
         }
         let v1 = v1.unwrap();
 
         let v2 = operands[1].borrow().get_value();
         if v2.is_none() {
-            return None;
+            return (None,None);
         }
         let v2 = v2.unwrap();
 
         match t{
-            Type::ADD => Some(v1 + v2),
-            Type::SUB => Some(v1 - v2),
-            Type::MUL => Some(v1 * v2),
+            Type::ADD => (Some(v1 + v2),None),
+            Type::SUB => (Some(v1 - v2),None),
+            Type::MUL => (Some(v1 * v2),None),
             Type::DIV => {
                 match v2 {
-                    0 => None, 
-                    _ => Some(v1 / v2)
+                    0 => (None,None), 
+                    _ => (Some(v1 / v2),None)
                 }
             },
             Type::MIN => {
@@ -103,7 +105,7 @@ impl Equation {
                         min = min.min(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MAX));
                     }
                 }
-                Some(min)
+                (Some(min),None)
             },
             Type::MAX => {
 
@@ -119,7 +121,7 @@ impl Equation {
                         max = max.max(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MIN));
                     }
                 }
-                Some(max)
+                (Some(max),None)
             },
 
             Type::SUM => {
@@ -136,7 +138,7 @@ impl Equation {
                         sum += spreadsheet_ref.get_cell_value(y,x).unwrap_or(0);
                     }
                 }
-                Some(sum)
+                (Some(sum),None)
             },
             Type::AVG => {
 
@@ -155,7 +157,7 @@ impl Equation {
                         count += if v.is_some() {1} else {0};
                     }
                 }
-                Some(sum/count)
+                (Some(sum/count),None)
             },
             Type::DEV => {
 
@@ -179,7 +181,7 @@ impl Equation {
                 let mean = sum as f64 / count as f64;
                 let mean_sq = sq as f64 / count as f64;
                 let std = (mean_sq - mean*mean).sqrt();
-                Some(std as i32)
+                (Some(std as i32),None)
             },
             _ => {
                 panic!("Unsupported operation to process equation");
@@ -193,138 +195,11 @@ impl Equation {
             return Some(0);
         }
 
-        let t = self.t;
-        if t == Type::SLP {
-            let c = self.operands[0].borrow().get_value();
-
-            if c.is_none() {
-                return None;
-            }
-            assert!(c.unwrap() >= 0, "Invalid negative sleep time");
-            // do nothing for c seconds
-            sleep(Duration::from_secs(c.unwrap() as u64));
-            return c;
+        let (val, sleep_time) = self.process_equation_silent(spreadsheet_ref);
+        if let Some(sleep_time) = sleep_time {
+            sleep(Duration::from_millis(sleep_time as u64));
         }
-
-        let operands = &self.operands;
-        let v1 = operands[0].borrow().get_value();
-        if v1.is_none() {
-            return None;
-        }
-        let v1 = v1.unwrap();
-
-        let v2 = operands[1].borrow().get_value();
-        if v2.is_none() {
-            return None;
-        }
-        let v2 = v2.unwrap();
-
-        match t{
-            Type::ADD => Some(v1 + v2),
-            Type::SUB => Some(v1 - v2),
-            Type::MUL => Some(v1 * v2),
-            Type::DIV => {
-                match v2 {
-                    0 => None, 
-                    _ => Some(v1 / v2)
-                }
-            },
-            Type::MIN => {
-
-                let y1 = operands[0].borrow().get_coordinate().0;
-                let x1 = operands[0].borrow().get_coordinate().1;
-                let y2 = operands[1].borrow().get_coordinate().0;
-                let x2 = operands[1].borrow().get_coordinate().1;
-                
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut min = i32::MAX; 
-                for y in y1..=y2 {
-                    for x in x1..=x2 {
-                        min = min.min(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MAX));
-                    }
-                }
-                Some(min)
-            },
-            Type::MAX => {
-
-                let y1 = operands[0].borrow().get_coordinate().0;
-                let x1 = operands[0].borrow().get_coordinate().1;
-                let y2 = operands[1].borrow().get_coordinate().0;
-                let x2 = operands[1].borrow().get_coordinate().1;
-                
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut max = i32::MIN; 
-                for y in y1..=y2 {
-                    for x in x1..=x2 {
-                        max = max.max(spreadsheet_ref.get_cell_value(y,x).unwrap_or(i32::MIN));
-                    }
-                }
-                Some(max)
-            },
-
-            Type::SUM => {
-
-                let y1 = operands[0].borrow().get_coordinate().0;
-                let x1 = operands[0].borrow().get_coordinate().1;
-                let y2 = operands[1].borrow().get_coordinate().0;
-                let x2 = operands[1].borrow().get_coordinate().1;
-                
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut sum = 0; 
-                for y in y1..=y2 {
-                    for x in x1..=x2 {
-                        sum += spreadsheet_ref.get_cell_value(y,x).unwrap_or(0);
-                    }
-                }
-                Some(sum)
-            },
-            Type::AVG => {
-
-                let y1 = operands[0].borrow().get_coordinate().0;
-                let x1 = operands[0].borrow().get_coordinate().1;
-                let y2 = operands[1].borrow().get_coordinate().0;
-                let x2 = operands[1].borrow().get_coordinate().1;
-
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut count = 0;
-                let mut sum = 0; 
-                for y in y1..=y2 {
-                    for x in x1..=x2 {
-                        let v = spreadsheet_ref.get_cell_value(y,x);
-                        sum += v.unwrap_or(0);
-                        count += if v.is_some() {1} else {0};
-                    }
-                }
-                Some(sum/count)
-            },
-            Type::DEV => {
-
-                let y1 = operands[0].borrow().get_coordinate().0;
-                let x1 = operands[0].borrow().get_coordinate().1;
-                let y2 = operands[1].borrow().get_coordinate().0;
-                let x2 = operands[1].borrow().get_coordinate().1;
-
-                assert!(x1<=x2 && y1<=y2, "Invalid range!");
-                let mut count = 0;
-                let mut sum = 0; 
-                let mut sq = 0;
-                for y in y1..=y2 {
-                    for x in x1..=x2 {
-                        let v = spreadsheet_ref.get_cell_value(y,x);
-                        sum += v.unwrap_or(0);
-                        count += if v.is_some() {1} else {0};
-                        sq += v.unwrap_or(0)*v.unwrap_or(0);
-                    }
-                }
-                let mean = sum as f64 / count as f64;
-                let mean_sq = sq as f64 / count as f64;
-                let std = (mean_sq - mean*mean).sqrt();
-                Some(std as i32)
-            },
-            _ => {
-                panic!("Unsupported operation to process equation");
-            }
-        }
+        return val;
     }
 
     // pub fn print(&self){
@@ -355,23 +230,10 @@ impl Equation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::value::Value;
 
     fn create_mock_operand(value: i32, coordinate: (usize, usize)) -> SharedOperand {
         SharedOperand::new(Value::new(Some(coordinate), Some(value)))
-    }
-
-    struct MockOperand {
-        value: Option<i32>,
-        coordinate: Coordinate,
-    }
-
-    impl MockOperand {
-        fn new(value: i32, coordinate: Coordinate) -> Self {
-            MockOperand {
-                value: Some(value),
-                coordinate,
-            }
-        }
     }
 
     #[test]
@@ -381,7 +243,7 @@ mod tests {
         let equation = Equation::new(Coordinate(0, 2), Some(Type::ADD), Some(vec![operand1, operand2]));
 
         let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(8));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(8),None));
     }
 
     #[test]
@@ -391,7 +253,7 @@ mod tests {
         let equation = Equation::new(Coordinate(0, 2), Some(Type::SUB), Some(vec![operand1, operand2]));
 
         let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(6));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(6),None));
     }
 
     #[test]
@@ -401,7 +263,7 @@ mod tests {
         let equation = Equation::new(Coordinate(0, 2), Some(Type::MUL), Some(vec![operand1, operand2]));
 
         let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(42));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(42),None));
     }
 
     #[test]
@@ -411,7 +273,7 @@ mod tests {
         let equation = Equation::new(Coordinate(0, 2), Some(Type::DIV), Some(vec![operand1, operand2]));
 
         let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(5));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(5),None));
     }
 
     #[test]
@@ -421,7 +283,7 @@ mod tests {
         let equation = Equation::new(Coordinate(0, 2), Some(Type::DIV), Some(vec![operand1, operand2]));
 
         let spreadsheet = SpreadSheet::new(10,10); // Mock or real implementation
-        assert_eq!(equation.process_equation_silent(&spreadsheet), None);
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (None,None));
     }
 
     #[test]
@@ -436,7 +298,7 @@ mod tests {
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(3));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(3),None));
     }
 
     #[test]
@@ -451,7 +313,7 @@ mod tests {
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(10));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(10),None));
     }
 
     #[test]
@@ -466,7 +328,7 @@ mod tests {
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(26));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(26),None));
     }
 
     #[test]
@@ -481,6 +343,6 @@ mod tests {
         spreadsheet.set_cell_value(1, 0, 3);
         spreadsheet.set_cell_value(1, 1, 8);
 
-        assert_eq!(equation.process_equation_silent(&spreadsheet), Some(6));
+        assert_eq!(equation.process_equation_silent(&spreadsheet), (Some(6),None));
     }
 }

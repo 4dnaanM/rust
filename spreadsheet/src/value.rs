@@ -54,11 +54,10 @@ impl Cell {
             if let Value::Cell(ref neighbor) = *operand.borrow() {
                 let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
                 neighbors.retain(|x| !Rc::ptr_eq(&x.0, &self_ref.0));
-                // neighbors.remove(&self_ref);
             }
         }
         
-        self.value = eq.process_equation_silent(spreadsheet_ref);
+        self.value = eq.process_equation_silent(spreadsheet_ref).0;
     
         self.equation = Box::new(eq);
     
@@ -74,13 +73,6 @@ impl Cell {
             for y in y1..=y2 {
                 for x in x1..=x2 {
                     let current = &spreadsheet_ref.cells[y][x];
-                    // if !current.borrow().is_cell() {
-                    //     let value = current.borrow().get_value();
-                    //     let mut new_cell = Value::new(Some((y, x)), None);
-                    //     new_cell.set_value(value);
-                    //     let new_shared_cell = SharedOperand::new(new_cell);
-                    //     *current.borrow_mut() = new_shared_cell.borrow().clone();
-                    // }
                     let neighbor = current.borrow();
                     if let Value::Cell(ref cell) = *neighbor {
                         cell.downstream_neighbors.borrow_mut().push(self_ref.clone());
@@ -91,14 +83,6 @@ impl Cell {
 
         else{
             for operand in new_operands {
-                // if !operand.borrow().is_cell() {
-                //     let value = operand.borrow().get_value();
-                //     let coord = operand.borrow().get_coordinate().clone();
-                //     let mut new_cell = Value::new(Some(coord), None);
-                //     new_cell.set_value(value);
-                //     let new_shared_cell = SharedOperand::new(new_cell);
-                //     *operand.borrow_mut() = new_shared_cell.borrow().clone();
-                // }
                 if let Value::Cell(ref neighbor) = *operand.borrow() {
                     neighbor.downstream_neighbors.borrow_mut().push(self_ref.clone());
                     // print!("Added to downstream neighbors of: ({},{})", neighbor.coordinate.0, neighbor.coordinate.1);
@@ -130,13 +114,6 @@ struct Constant {
     value: i32,
 } 
 impl Constant {
-    // fn new(coordinate: Coordinate, val: i32) -> Self {
-    //     Value {
-    //         value: val,
-    //         coordinate: coordinate
-    //     }
-    // }
-
     fn new(val: i32) -> Self {
         Constant {
             value: val,
@@ -148,17 +125,12 @@ impl Constant {
 }
 
 #[derive(Eq, PartialEq, Clone)]
-pub enum CellStatus {
-    OK,
-    ERR
-}
-
-#[derive(Eq, PartialEq, Clone)]
 pub enum Value {
-    // it should own the cell or value
+    // it should own the cell or const
     Cell(Cell), 
     Constant(Constant)
 }
+
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
@@ -172,7 +144,6 @@ impl Value {
     
     pub fn new<U : Into<Coordinate>>(input: Option<U>, val: Option<i32>) -> Self {
         match input {
-            // Some(v) => Value::Value(Value::new(input.unwrap().into(),v)),
             None => Value::Constant(Constant::new(val.unwrap_or(0))),
             Some(i) => {
                 let coord = i.into();
@@ -208,7 +179,6 @@ impl Value {
         }
     }
 
-    // pub fn get_downstream_neighbors(&self) -> RefCell<HashSet<SharedOperand>> {
     pub fn get_downstream_neighbors(&self) -> RefCell<Vec<SharedOperand>> {
         match self {
             Value::Cell(cell) => cell.downstream_neighbors.clone(),
@@ -239,26 +209,6 @@ impl Value {
         }
     }
 
-    pub fn is_cell(&self) -> bool {
-        match self {
-            Value::Cell(_) => true,
-            _ => false
-        }
-    }
-
-    pub fn is_const(&self) -> bool {
-        match self {
-            Value::Constant(_) => true,
-            _ => false
-        }
-    }
-
-    pub fn is_valid(&self) -> bool {
-        match self {
-            Value::Cell(v) => v.value.is_some(),
-            _ => true
-        }
-    }
 }
 
 
@@ -271,6 +221,8 @@ impl Hash for SharedOperand {
     }
 }
 
+// References to Operands that can be shared and also mutated
+// Solely to prevent duplication
 impl SharedOperand {
     pub fn new(op: Value) -> Self {
         SharedOperand(Rc::new(RefCell::new(op)))
@@ -286,8 +238,6 @@ impl SharedOperand {
     }
 }
 
-// References to Operands that can be shared and also mutated
-// Solely to prevent duplication
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,7 +259,6 @@ mod tests {
     #[test]
     fn test_value_creation_constant() {
         let value = Value::new(None::<Coordinate>, Some(10));
-        assert!(value.is_const());
         assert_eq!(value.get_value(), Some(10));
     }
 
@@ -317,7 +266,6 @@ mod tests {
     fn test_value_creation_cell() {
         let coord = Coordinate(2, 3);
         let value = Value::new(Some(coord), Some(5));
-        assert!(value.is_cell());
         assert_eq!(value.get_value(), Some(5));
         assert_eq!(value.get_coordinate(), &coord);
     }
@@ -352,7 +300,7 @@ mod tests {
     fn test_downstream_neighbors() {
         let coord1 = Coordinate(1, 1);
         let coord2 = Coordinate(2, 2);
-        let mut cell1 = Cell::new(coord1);
+        let cell1 = Cell::new(coord1);
         let cell2 = Cell::new(coord2);
         let shared_operand = SharedOperand::new(Value::Cell(cell2));
 

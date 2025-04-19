@@ -97,7 +97,6 @@ impl SpreadSheet {
         let mut in_degrees = HashMap::new();
         self.get_indegrees(row,col, &mut in_degrees);
         // print!("do_operation: In degrees: {:?}\n", in_degrees);
-        // print!("do_operation: In degrees: {:?}\n", in_degrees);
 
         //use indegrees to find toposort
         let order = self.toposort(in_degrees);
@@ -157,27 +156,13 @@ impl SpreadSheet {
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    pub fn set_cell_equation_from_eq(&mut self, row:usize, col:usize, eq: Equation) -> Status {
-
-        // print!("New equation: ");
-        // eq.print();
-        // println!();
-
-        // if self.cells[row][col].borrow().is_const() {
-        //     println!("Convert to a cell before setting equation: ");
-        //     // self.cells[row][col].borrow().print(); 
-        //     self.cells[row][col] = SharedOperand::new(Value::new(Some((row, col)), None));
-
-        // }
-        // self.cells[row][col].borrow().print(); 
-
-        // self.cells[row][col].borrow_mut().set_equation(eq);
-        let cell_ref = self.cells[row][col].clone();
-
+    fn check_target_in_operands(&self, eq: &Equation, row: usize, col: usize) -> bool{
         let ops = eq.get_operands().clone();
+        let cell_ref = self.cells[row][col].clone();
         if ops.iter().any(|op| op == &cell_ref) {
-            return Status::ERR;
+            return true;
         }
+        
         if eq.t == Type::SUM || eq.t == Type::AVG || eq.t == Type::DEV {
             let c1 = eq.get_operands()[0].borrow();
             let c2 = eq.get_operands()[1].borrow();
@@ -190,22 +175,34 @@ impl SpreadSheet {
             for i in y1..=y2 {
                 for j in x1..=x2 {
                     if i == row && j == col {
-                        return Status::ERR; // cycle detected
+                        return true;
                     }
                 }
             }
         }
+        false
+    }
+
+    pub fn set_cell_equation_from_eq(&mut self, row:usize, col:usize, eq: Equation) -> Status {
+
+        // print!("New equation: ");
+        // eq.print();
+        // println!();
+
+        let cell_ref = self.cells[row][col].clone();
+
+        if self.check_target_in_operands(&eq, row, col) {return Status::ERR;}
 
         let old_eq = cell_ref.borrow().get_equation().clone();
         cell_ref.borrow_mut().set_equation(eq, cell_ref.clone(), self);
 
         if !self.do_operation(row, col) {
             {cell_ref.borrow_mut().set_equation(old_eq, cell_ref.clone(),self);}
-            return Status::ERR; 
             // println!("set_cell_equation: Failed to set equation due to cycle, reverting to old equation");
             // print!("Old equation: ");
             // cell_ref.borrow_mut().get_equation().print();
             // println!();
+            return Status::ERR; 
         };
 
         Status::OK
