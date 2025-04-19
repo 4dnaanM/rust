@@ -113,7 +113,7 @@ pub fn process_command(
                 "w" => {
                     if *enable_output {
                         if *row > 10 {
-                            *row = (*row) - 10;
+                            *row -= 10;
                         } else {
                             *row = 1;
                         }
@@ -123,7 +123,7 @@ pub fn process_command(
                 "a" => {
                     if *enable_output {
                         if *col > 10 {
-                            *col = (*col) - 10;
+                            *col -= 10;
                         } else {
                             *col = 1;
                         };

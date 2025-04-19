@@ -155,11 +155,8 @@ impl Value {
                 let coord = i.into();
                 let (row, col) = (coord.0, coord.1);
                 let mut ans = Value::Cell(Cell::new((row, col)));
-                match val {
-                    Some(v) => ans.set_value(Some(v)),
-                    None => {}
-                }
-                return ans;
+                if let Some(v) = val { ans.set_value(Some(v)) }
+                ans
             }
         }
     }

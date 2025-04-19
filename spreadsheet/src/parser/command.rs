@@ -93,7 +93,7 @@ impl ArithmeticCommand {
             (None, None) => (),
         };
 
-        return true;
+        true
     }
 }
 

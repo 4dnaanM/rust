@@ -56,7 +56,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         return Ok(Command::UserInteractionCommand(user_interaction));
     }
 
-    if let Some(_) = captures.name("SCROLL_TO_CELL") {
+    if captures.name("SCROLL_TO_CELL").is_some() {
         let scroll_to_cell_str = captures
             .name("SCROLL_TO_CELL")
             .ok_or_else(|| Error::InvalidInput("Invalid user input".to_string()))?
@@ -208,7 +208,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
             };
             let cmd = ArithmeticCommand {
                 target_cell: Value::Cell(target_cell),
-                operand_1: operand_1,
+                operand_1,
                 operator: Some(
                     captures
                         .name("OPERATOR")
@@ -225,7 +225,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         } else {
             let cmd = ArithmeticCommand {
                 target_cell: Value::Cell(target_cell),
-                operand_1: operand_1,
+                operand_1,
                 operator: None,
                 operand_2: None,
             };
@@ -237,7 +237,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     }
 
     // The command does not match the regex. Therefore, invalid command
-    return Err(Error::InvalidInput("Invalid user input".to_string()));
+    Err(Error::InvalidInput("Invalid user input".to_string()))
 }
 
 #[cfg(test)]

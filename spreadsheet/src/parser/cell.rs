@@ -47,7 +47,7 @@ pub fn convert_string_to_cell(cell: &str) -> Option<Cell> {
     // Parses the row number of the cell
     match cell[row_start..].parse::<usize>() {
         Ok(row) => {
-            let cell_struct = Cell { row: row, col: col };
+            let cell_struct = Cell { row, col };
             Some(cell_struct)
         }
         Err(_) => None,

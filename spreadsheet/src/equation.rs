@@ -74,7 +74,7 @@ impl Equation {
         }
 
         let operands = &self.operands;
-        if operands.len() == 0 {
+        if operands.is_empty() {
             return (Some(0), None);
         }
         let v1 = operands[0].borrow().get_value();
@@ -192,7 +192,7 @@ impl Equation {
 
     pub fn process_equation(&self, spreadsheet_ref: &SpreadSheet) -> Option<i32> {
         // println!("Processing equation: ");
-        if self.operands.len() == 0 {
+        if self.operands.is_empty() {
             return Some(0);
         }
 
@@ -200,7 +200,7 @@ impl Equation {
         if let Some(sleep_time) = sleep_time {
             sleep(Duration::from_millis(sleep_time as u64));
         }
-        return val;
+        val
     }
 
     // pub fn print(&self){

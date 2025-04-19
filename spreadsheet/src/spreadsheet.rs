@@ -78,8 +78,8 @@ impl SpreadSheet {
             }
         }
 
-        while !queue.is_empty() {
-            let (row, col) = queue.pop().unwrap();
+        while let Some((row, col)) = queue.pop() {
+            
             order.push((row, col));
 
             let op = self.cells[row][col].borrow();
@@ -125,7 +125,7 @@ impl SpreadSheet {
             self.cells[coord.0][coord.1].borrow_mut().set_value(val);
         }
 
-        return true;
+        true
     }
 
     pub fn set_cell_equation(
