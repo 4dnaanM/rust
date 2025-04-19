@@ -16,9 +16,26 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      working-directory: spreadsheet
+    
+    - name: Run Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+      working-directory: spreadsheet
+    
     - name: Build
       run: cargo build --verbose
       working-directory: spreadsheet
+    
     - name: Run tests
       run: cargo test --verbose
+      working-directory: spreadsheet
+
+    - name: Install Tarpaulin
+      run: cargo install cargo-tarpaulin
+
+    - name: Run Coverage
+      run: cargo tarpaulin --workspace --ignore-tests --out Xml
       working-directory: spreadsheet
