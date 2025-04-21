@@ -135,11 +135,18 @@ impl SleepCommand {
 }
 
 #[derive(PartialEq, Debug, Clone)]
+pub struct VCSCommand {
+    pub command: String,
+    pub argument: Option<String>,
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Command {
     RangeCommand(RangeCommand),
     ArithmeticCommand(ArithmeticCommand),
     UserInteractionCommand(UserInteractionCommand),
     SleepCommand(SleepCommand),
+    VCSCommand(VCSCommand),
 }
 
 #[cfg(test)]

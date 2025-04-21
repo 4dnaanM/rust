@@ -23,10 +23,10 @@ pub fn process_command(
         parser::parser::parse_cmd(user_input, *max_rows, *max_cols);
     let Ok(command) = user_command else {
         let duration = start.elapsed();
-        print!("[{:.1}] (invalid command) > ", duration.as_secs_f64());
         if *enable_output {
             print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
         }
+        print!("[{:.1}] (invalid command) > ", duration.as_secs_f64());
         io::stdout().flush().unwrap();
         return;
     };
@@ -187,6 +187,11 @@ pub fn process_command(
             if *enable_output {
                 print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
             }
+        }
+        Command::VCSCommand(cmd) => {
+            status = true;
+            println!("{}", cmd.command);
+            println!("{:?}", cmd.argument);
         }
     }
     let duration = start.elapsed();

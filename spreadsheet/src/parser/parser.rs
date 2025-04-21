@@ -8,6 +8,7 @@ use crate::parser::error::Error;
 use regex::Regex;
 
 use super::command::SleepCommand;
+use super::command::VCSCommand;
 
 /// Parses user input
 pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result<Command, Error> {
@@ -16,6 +17,11 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     let operator: String = String::from(r"(\+|\-|\*|\/)");
     let function: String = String::from(r"(MAX|MIN|AVG|STDEV|SUM)");
     let value: String = format!("({}|{})", cell, constant);
+
+    let vcs_command: String = String::from(
+        "^(gitsap\\s(?P<VCS_COMMAND>commit|list|checkout)(\\s?P<VCS_INFO>[A-Za-z0-9]+)?\\s*)$",
+    );
+
     let ui_command: String = format!(
         "^((?P<UI_COMMAND>w|d|a|s|q|(\\s*enable_output\\s*)|(\\s*disable_output\\s*))|(\\s*scroll_to (?P<SCROLL_TO_CELL>{})\\s*))$",
         cell
@@ -35,8 +41,8 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
 
     // A valid command is either a UI command, range command or arithmetic command
     let command: String = format!(
-        "{}|{}|{}|{}",
-        ui_command, sleep_command, range_cmd, arithmetic_cmd
+        "{}|{}|{}|{}|{}",
+        vcs_command, ui_command, sleep_command, range_cmd, arithmetic_cmd
     );
     let regex = Regex::new(&command).map_err(|_| Error::RegexError)?;
 
@@ -46,6 +52,23 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     let Some(captures) = captured_groups else {
         return Err(Error::InvalidInput);
     };
+
+    // Check for VCS Command
+    if let Some(command) = captures.name("VCS_COMMAND") {
+        let vcs_command;
+        if let Some(info) = captures.name("VCS_INFO") {
+            vcs_command = VCSCommand {
+                command: command.as_str().to_string(),
+                argument: Some(info.as_str().to_string()),
+            };
+        } else {
+            vcs_command = VCSCommand {
+                command: command.as_str().to_string(),
+                argument: None,
+            };
+        }
+        return Ok(Command::VCSCommand(vcs_command));
+    }
 
     // First, check for UI command
     if let Some(command) = captures.name("UI_COMMAND") {
@@ -59,7 +82,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if captures.name("SCROLL_TO_CELL").is_some() {
         let scroll_to_cell_str = captures
             .name("SCROLL_TO_CELL")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let scroll_to_cell = match convert_string_to_cell(scroll_to_cell_str) {
             Some(scroll_to_cell) => scroll_to_cell,
@@ -83,7 +106,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if is_sleep_command {
         let sleep_target_cell_str = captures
             .name("SLEEP_TARGET_CELL")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let sleep_target_cell = match convert_string_to_cell(sleep_target_cell_str) {
             Some(target_cell) => target_cell,
@@ -92,7 +115,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
 
         let sleep_value_str = captures
             .name("SLEEP_VALUE")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let sleep_value = match sleep_value_str.parse::<i32>() {
             Ok(constant) => Value::Constant(constant),
@@ -123,7 +146,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if is_range_command {
         let target_cell_str = captures
             .name("TARGET_CELL_RANGE")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let target_cell = match convert_string_to_cell(target_cell_str) {
             Some(target_cell) => target_cell,
@@ -132,7 +155,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
 
         let operand_1_str = captures
             .name("OPERAND_1_RANGE")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let operand_1 = match convert_string_to_cell(operand_1_str) {
             Some(operand_1) => operand_1,
@@ -141,7 +164,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
 
         let operand_2_str = captures
             .name("OPERAND_2_RANGE")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let operand_2 = match convert_string_to_cell(operand_2_str) {
             Some(operand_2) => operand_2,
@@ -152,7 +175,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
             target_cell: Value::Cell(target_cell),
             function: captures
                 .name("FUNCTION")
-                .ok_or_else(|| Error::InvalidInput)?
+                .ok_or(Error::InvalidInput)?
                 .as_str()
                 .to_string(),
             operand_1: Value::Cell(operand_1),
@@ -176,7 +199,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     if required_all_present {
         let target_cell_str = captures
             .name("TARGET_CELL_ARTH")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let target_cell = match convert_string_to_cell(target_cell_str) {
             Some(target_cell) => target_cell,
@@ -185,7 +208,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
 
         let operand_1_str = captures
             .name("OPERAND_1_ARTH")
-            .ok_or_else(|| Error::InvalidInput)?
+            .ok_or(Error::InvalidInput)?
             .as_str();
         let operand_1 = match operand_1_str.parse::<i32>() {
             Ok(constant) => Value::Constant(constant),
@@ -197,7 +220,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         if optional_all_present {
             let operand_2_str = captures
                 .name("OPERAND_2_ARTH")
-                .ok_or_else(|| Error::InvalidInput)?
+                .ok_or(Error::InvalidInput)?
                 .as_str();
             let operand_2 = match operand_2_str.parse::<i32>() {
                 Ok(constant) => Value::Constant(constant),
@@ -212,7 +235,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
                 operator: Some(
                     captures
                         .name("OPERATOR")
-                        .ok_or_else(|| Error::InvalidInput)?
+                        .ok_or(Error::InvalidInput)?
                         .as_str()
                         .to_string(),
                 ),
