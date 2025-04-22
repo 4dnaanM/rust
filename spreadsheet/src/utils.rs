@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -46,7 +46,9 @@ where
     }
 }
 
-#[derive(Clone, Copy, Hash, Eq, PartialEq, Debug, serde_derive::Serialize, serde_derive::Deserialize)]
+#[derive(
+    Clone, Copy, Hash, Eq, PartialEq, Debug, serde_derive::Serialize, serde_derive::Deserialize,
+)]
 pub struct Coordinate(pub usize, pub usize);
 impl From<(usize, usize)> for Coordinate {
     fn from((row, col): (usize, usize)) -> Self {

@@ -6,11 +6,11 @@ mod utils;
 mod value;
 mod vcs;
 
+use crate::vcs::vcs::VersionControlSystem;
 use spreadsheet::SpreadSheet;
 use std::env;
 use std::io;
 use std::io::Write;
-use crate::vcs::vcs::VersionControlSystem;
 
 pub fn main() {
     let args: Vec<String> = env::args().collect();

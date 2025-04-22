@@ -5,9 +5,9 @@ use crate::parser::error::Error;
 use crate::parser::print_output::print_sheet;
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::{Status, Type};
+use crate::vcs::vcs::VersionControlSystem;
 use std::io::{self, Write};
 use std::time::Instant;
-use crate::vcs::vcs::VersionControlSystem;
 
 pub fn process_command(
     user_input: &str,
@@ -197,26 +197,26 @@ pub fn process_command(
             match command {
                 "list" => {
                     vcs.list();
-                },
+                }
                 "commit" => {
                     if let Some(argument) = cmd.argument {
                         vcs.commit(spreadsheet, &argument);
                     }
-                },
+                }
                 "checkout" => {
                     if let Some(argument) = cmd.argument {
                         match argument[0..].parse::<usize>() {
                             Ok(commit_id) => {
                                 *spreadsheet = vcs.checkout(commit_id as u32, spreadsheet);
                             }
-                            Err(_) => ()
+                            Err(_) => (),
                         }
                         if *enable_output {
                             print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
-                        }            
+                        }
                     }
-                },
-                _ => ()
+                }
+                _ => (),
             }
         }
     }

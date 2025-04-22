@@ -1,7 +1,7 @@
+use crate::spreadsheet::SpreadSheet;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::Path;
-use crate::spreadsheet::SpreadSheet;
 
 #[derive(serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct Commit {
@@ -19,10 +19,8 @@ pub struct Commit {
 //     pub cells: HashMap<(u32,u32), String>,
 // }
 
-
-
 pub struct VersionControlSystem {
-    commits_with_parent: HashMap<u32,(u32,String)>, // List of commit IDs
+    commits_with_parent: HashMap<u32, (u32, String)>, // List of commit IDs
     current_id: u32,
     next_commit_id: u32,
     vcs_dir: String,
@@ -64,9 +62,10 @@ impl VersionControlSystem {
         serde_json::to_writer(file, &commit).expect("Failed to serialize commit");
         println!("Hui");
 
-        self.commits_with_parent.insert(self.next_commit_id, (self.current_id,commit.message));
+        self.commits_with_parent
+            .insert(self.next_commit_id, (self.current_id, commit.message));
         println!("Hui");
-        
+
         println!(
             "Commit created with ID: {} by user: {}",
             self.current_id,
@@ -75,7 +74,6 @@ impl VersionControlSystem {
         );
         self.current_id = self.next_commit_id;
         self.next_commit_id += 1;
-
     }
 
     pub fn list(&self) {
@@ -92,7 +90,7 @@ impl VersionControlSystem {
         if let Some(_commit) = self.commits_with_parent.get(&branch_id) {
             self.current_id = branch_id;
             println!("Checked out to branch ID: {}", branch_id);
-            return self.reconstruct_spreadsheet(branch_id);       
+            return self.reconstruct_spreadsheet(branch_id);
         } else {
             println!("Branch ID {} does not exist", branch_id);
             return spreadsheet.clone();
@@ -100,11 +98,10 @@ impl VersionControlSystem {
     }
 
     fn reconstruct_spreadsheet(&self, commit_id: u32) -> SpreadSheet {
-        
         let commit_path = format!("{}/commit_{}.json", self.vcs_dir, commit_id);
         let file = File::open(&commit_path).expect("Failed to open commit file");
         let commit: Commit = serde_json::from_reader(file).expect("Failed to deserialize commit");
-        
+
         let mut spreadsheet = commit.spreadsheet.clone();
         spreadsheet
     }

@@ -147,7 +147,7 @@ impl VCSCommand {
             ("list", Some(_)) => false,
             ("commit", None) => false,
             ("checkout", None) => false,
-            _ => true
+            _ => true,
         }
     }
 }

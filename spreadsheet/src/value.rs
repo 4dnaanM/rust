@@ -1,8 +1,8 @@
 use crate::equation::Equation;
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::Coordinate;
-use crate::utils::Type;
 use crate::utils::SerializableRcRefCell;
+use crate::utils::Type;
 
 use std::cell::{Ref, RefCell, RefMut};
 use std::hash::{Hash, Hasher};
@@ -237,10 +237,10 @@ impl SharedOperand {
         SharedOperand(SerializableRcRefCell::new(op))
     }
     pub fn borrow(&self) -> Ref<Value> {
-        self.0 .0.borrow()
+        self.0.0.borrow()
     }
     pub fn borrow_mut(&self) -> RefMut<Value> {
-        self.0 .0.borrow_mut()
+        self.0.0.borrow_mut()
     }
     pub fn clone(&self) -> SharedOperand {
         SharedOperand(self.0.clone())
