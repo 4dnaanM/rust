@@ -46,7 +46,6 @@ impl VersionControlSystem {
     pub fn commit(&mut self, spreadsheet: &SpreadSheet, message: &str) {
         println!("Committing changes...");
         // Check if the commit message is empty
-        println!("Hui");
         let commit = Commit {
             id: self.next_commit_id,
             message: message.to_string(),
@@ -54,17 +53,12 @@ impl VersionControlSystem {
             spreadsheet: spreadsheet.clone(),
             user: String::from("user"),
         };
-        println!("Hui");
         let commit_path = format!("{}/commit_{}.json", self.vcs_dir, self.next_commit_id);
-        println!("Hui");
         let file = File::create(&commit_path).expect("Failed to create commit file");
-        println!("Hui");
         serde_json::to_writer(file, &commit).expect("Failed to serialize commit");
-        println!("Hui");
-
+        
         self.commits_with_parent
             .insert(self.next_commit_id, (self.current_id, commit.message));
-        println!("Hui");
 
         println!(
             "Commit created with ID: {} by user: {}",
@@ -80,7 +74,7 @@ impl VersionControlSystem {
         for commit in self.commits_with_parent.keys() {
             let commit_ = self.commits_with_parent.get(commit).unwrap();
             println!(
-                "\nID: {}, Message: {}, Parent: {:?}\n",
+                "ID: {}, Message: {}, Parent: {:?}",
                 commit, commit_.1, commit_.0
             );
         }
