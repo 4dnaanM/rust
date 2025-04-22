@@ -205,11 +205,8 @@ pub fn process_command(
                 }
                 "checkout" => {
                     if let Some(argument) = cmd.argument {
-                        match argument[0..].parse::<usize>() {
-                            Ok(commit_id) => {
-                                *spreadsheet = vcs.checkout(commit_id as u32, spreadsheet);
-                            }
-                            Err(_) => (),
+                        if let Ok(commit_id) = argument[0..].parse::<usize>() {
+                            *spreadsheet = vcs.checkout(commit_id as u32, spreadsheet);
                         }
                         if *enable_output {
                             print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);

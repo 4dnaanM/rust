@@ -90,10 +90,10 @@ impl VersionControlSystem {
         if let Some(_commit) = self.commits_with_parent.get(&branch_id) {
             self.current_id = branch_id;
             println!("Checked out to branch ID: {}", branch_id);
-            return self.reconstruct_spreadsheet(branch_id);
+            self.reconstruct_spreadsheet(branch_id)
         } else {
             println!("Branch ID {} does not exist", branch_id);
-            return spreadsheet.clone();
+            spreadsheet.clone()
         }
     }
 
@@ -102,7 +102,7 @@ impl VersionControlSystem {
         let file = File::open(&commit_path).expect("Failed to open commit file");
         let commit: Commit = serde_json::from_reader(file).expect("Failed to deserialize commit");
 
-        let mut spreadsheet = commit.spreadsheet.clone();
-        spreadsheet
+        
+        commit.spreadsheet.clone()
     }
 }
