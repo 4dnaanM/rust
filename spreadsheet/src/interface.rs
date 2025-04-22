@@ -7,10 +7,12 @@ use crate::spreadsheet::SpreadSheet;
 use crate::utils::{Status, Type};
 use std::io::{self, Write};
 use std::time::Instant;
+use crate::vcs::vcs::VersionControlSystem;
 
 pub fn process_command(
     user_input: &str,
     spreadsheet: &mut SpreadSheet,
+    vcs: &mut VersionControlSystem,
     row: &mut usize,
     col: &mut usize,
     enable_output: &mut bool,
@@ -190,8 +192,32 @@ pub fn process_command(
         }
         Command::VCSCommand(cmd) => {
             status = true;
-            println!("{}", cmd.command);
-            println!("{:?}", cmd.argument);
+            let command = cmd.command.clone();
+            let command = command.as_str();
+            match command {
+                "list" => {
+                    vcs.list();
+                },
+                "commit" => {
+                    if let Some(argument) = cmd.argument {
+                        vcs.commit(spreadsheet, &argument);
+                    }
+                },
+                "checkout" => {
+                    if let Some(argument) = cmd.argument {
+                        match argument[0..].parse::<usize>() {
+                            Ok(commit_id) => {
+                                *spreadsheet = vcs.checkout(commit_id as u32, spreadsheet);
+                            }
+                            Err(_) => ()
+                        }
+                        if *enable_output {
+                            print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
+                        }            
+                    }
+                },
+                _ => ()
+            }
         }
     }
     let duration = start.elapsed();

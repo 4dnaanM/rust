@@ -105,7 +105,7 @@ impl VersionControlSystem {
         let file = File::open(&commit_path).expect("Failed to open commit file");
         let commit: Commit = serde_json::from_reader(file).expect("Failed to deserialize commit");
         
-        let spreadsheet = commit.spreadsheet.clone();
+        let mut spreadsheet = commit.spreadsheet.clone();
         spreadsheet
     }
 }
