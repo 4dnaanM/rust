@@ -12,7 +12,7 @@ use std::hash::{Hash, Hasher};
 // callers should work only with sharedoperand and operand
 
 #[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
-struct Cell {
+pub struct Cell {
     pub coordinate: Coordinate,
     pub value: Option<i32>,
 
@@ -118,7 +118,7 @@ impl Cell {
 }
 
 #[derive(Eq, PartialEq, Clone, Hash, serde_derive::Serialize, serde_derive::Deserialize)]
-struct Constant {
+pub struct Constant {
     // coordinate: Coordinate,
     value: i32,
 }

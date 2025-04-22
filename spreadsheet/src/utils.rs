@@ -71,21 +71,21 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn to_str(&self) -> &str {
-        match self {
-            Type::ADD => "ADD",
-            Type::SUB => "SUB",
-            Type::MUL => "MUL",
-            Type::DIV => "DIV",
-            Type::NUL => "NUL",
-            Type::MIN => "MIN",
-            Type::MAX => "MAX",
-            Type::SUM => "SUM",
-            Type::AVG => "AVG",
-            Type::DEV => "DEV",
-            Type::SLP => "SLP",
-        }
-    }
+    // pub fn to_str(&self) -> &str {
+    //     match self {
+    //         Type::ADD => "ADD",
+    //         Type::SUB => "SUB",
+    //         Type::MUL => "MUL",
+    //         Type::DIV => "DIV",
+    //         Type::NUL => "NUL",
+    //         Type::MIN => "MIN",
+    //         Type::MAX => "MAX",
+    //         Type::SUM => "SUM",
+    //         Type::AVG => "AVG",
+    //         Type::DEV => "DEV",
+    //         Type::SLP => "SLP",
+    //     }
+    // }
     pub fn from_str(s: &str) -> Type {
         match s {
             "+" => Type::ADD,
@@ -130,20 +130,20 @@ mod tests {
     }
 
     // Tests for Type enum
-    #[test]
-    fn test_type_to_str() {
-        assert_eq!(Type::ADD.to_str(), "ADD");
-        assert_eq!(Type::SUB.to_str(), "SUB");
-        assert_eq!(Type::MUL.to_str(), "MUL");
-        assert_eq!(Type::DIV.to_str(), "DIV");
-        assert_eq!(Type::NUL.to_str(), "NUL");
-        assert_eq!(Type::MIN.to_str(), "MIN");
-        assert_eq!(Type::MAX.to_str(), "MAX");
-        assert_eq!(Type::SUM.to_str(), "SUM");
-        assert_eq!(Type::AVG.to_str(), "AVG");
-        assert_eq!(Type::DEV.to_str(), "DEV");
-        assert_eq!(Type::SLP.to_str(), "SLP");
-    }
+    // #[test]
+    // fn test_type_to_str() {
+    //     assert_eq!(Type::ADD.to_str(), "ADD");
+    //     assert_eq!(Type::SUB.to_str(), "SUB");
+    //     assert_eq!(Type::MUL.to_str(), "MUL");
+    //     assert_eq!(Type::DIV.to_str(), "DIV");
+    //     assert_eq!(Type::NUL.to_str(), "NUL");
+    //     assert_eq!(Type::MIN.to_str(), "MIN");
+    //     assert_eq!(Type::MAX.to_str(), "MAX");
+    //     assert_eq!(Type::SUM.to_str(), "SUM");
+    //     assert_eq!(Type::AVG.to_str(), "AVG");
+    //     assert_eq!(Type::DEV.to_str(), "DEV");
+    //     assert_eq!(Type::SLP.to_str(), "SLP");
+    // }
 
     #[test]
     fn test_type_from_str() {
