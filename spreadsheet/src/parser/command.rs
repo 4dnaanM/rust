@@ -140,6 +140,18 @@ pub struct VCSCommand {
     pub argument: Option<String>,
 }
 
+impl VCSCommand {
+    pub fn is_valid_vcs_command(&self) -> bool {
+        let command = self.command.as_str();
+        match (command, self.argument.clone()) {
+            ("list", Some(_)) => false,
+            ("commit", None) => false,
+            ("checkout", None) => false,
+            _ => true
+        }
+    }
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum Command {
     RangeCommand(RangeCommand),

@@ -19,7 +19,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
     let value: String = format!("({}|{})", cell, constant);
 
     let vcs_command: String = String::from(
-        "^(gitsap\\s(?P<VCS_COMMAND>commit|list|checkout)(\\s?P<VCS_INFO>[A-Za-z0-9]+)?\\s*)$",
+        "^(gitsap\\s(?P<VCS_COMMAND>commit|list|checkout)(\\s(?P<VCS_INFO>[A-Za-z0-9]+))?\\s*)$",
     );
 
     let ui_command: String = format!(
@@ -66,6 +66,9 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
                 command: command.as_str().to_string(),
                 argument: None,
             };
+        }
+        if !vcs_command.is_valid_vcs_command() {
+            return Err(Error::InvalidInput);
         }
         return Ok(Command::VCSCommand(vcs_command));
     }
