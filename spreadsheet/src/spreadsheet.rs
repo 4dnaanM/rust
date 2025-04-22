@@ -6,6 +6,7 @@ use std::collections::HashMap;
 
 // should expose set and get for cell value, and set for cell equation
 // all the traversal and updation methods should be defined here like findDownstream, toposort
+#[derive(Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct SpreadSheet {
     m: usize,
     n: usize,

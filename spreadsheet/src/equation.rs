@@ -10,7 +10,7 @@ use std::{
     i32,
 };
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct Equation {
     pub coordinate: Coordinate,
     pub t: Type,

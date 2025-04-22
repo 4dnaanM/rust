@@ -2,16 +2,16 @@ use crate::equation::Equation;
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::Coordinate;
 use crate::utils::Type;
+use crate::utils::SerializableRcRefCell;
 
 use std::cell::{Ref, RefCell, RefMut};
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
 // use std::collections::HashSet;
 
 // cell and value are not meant to be public
 // callers should work only with sharedoperand and operand
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 struct Cell {
     pub coordinate: Coordinate,
     pub value: Option<i32>,
@@ -58,7 +58,7 @@ impl Cell {
         for operand in old_operands {
             if let Value::Cell(ref neighbor) = *operand.borrow() {
                 let mut neighbors = neighbor.downstream_neighbors.borrow_mut();
-                neighbors.retain(|x| !Rc::ptr_eq(&x.0, &self_ref.0));
+                neighbors.retain(|x| !SerializableRcRefCell::ptr_eq(&x.0, &self_ref.0));
             }
         }
 
@@ -117,7 +117,7 @@ impl Cell {
     // }
 }
 
-#[derive(Eq, PartialEq, Clone, Hash)]
+#[derive(Eq, PartialEq, Clone, Hash, serde_derive::Serialize, serde_derive::Deserialize)]
 struct Constant {
     // coordinate: Coordinate,
     value: i32,
@@ -131,7 +131,7 @@ impl Constant {
     // }
 }
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub enum Value {
     // it should own the cell or const
     Cell(Cell),
@@ -220,26 +220,27 @@ impl Value {
     }
 }
 
-#[derive(Eq, PartialEq, Clone)]
-pub struct SharedOperand(pub Rc<RefCell<Value>>);
+#[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
+pub struct SharedOperand(pub SerializableRcRefCell<Value>);
 impl Hash for SharedOperand {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = SerializableRcRefCell::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
 
 // References to Operands that can be shared and also mutated
 // Solely to prevent duplication
+// Update methods to use the wrapper
 impl SharedOperand {
     pub fn new(op: Value) -> Self {
-        SharedOperand(Rc::new(RefCell::new(op)))
+        SharedOperand(SerializableRcRefCell::new(op))
     }
     pub fn borrow(&self) -> Ref<Value> {
-        self.0.borrow()
+        self.0 .0.borrow()
     }
     pub fn borrow_mut(&self) -> RefMut<Value> {
-        self.0.borrow_mut()
+        self.0 .0.borrow_mut()
     }
     pub fn clone(&self) -> SharedOperand {
         SharedOperand(self.0.clone())
