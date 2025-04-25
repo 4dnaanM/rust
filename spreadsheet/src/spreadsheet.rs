@@ -70,8 +70,9 @@ impl SpreadSheet {
         let v1 = op1.get_value();
         let v2 = op2.get_value();
 
-        let c1 = Some((op1.get_coordinate().0, op1.get_coordinate().1));
-        let c2 = Some((op2.get_coordinate().0, op2.get_coordinate().1));
+        let c1 = if op1.is_cell() {Some((op1.get_coordinate().0, op1.get_coordinate().1))} else {None};
+        
+        let c2 = if op2.is_cell() {Some((op2.get_coordinate().0, op2.get_coordinate().1))} else {None};
 
         let t = eq.t;
         (tcoords, c1, c2, v1, v2, t)
