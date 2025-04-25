@@ -37,27 +37,36 @@ impl SpreadSheet {
         Value::get_value(&(self.cells[row][col].borrow()))
     }
 
-    pub fn get_cell_equation_parameters(&self, row: usize, col: usize) -> 
-    ((usize, usize), Option<(usize, usize)>,Option<(usize, usize)>,Option<i32>,Option<i32>,Type)
-    {
+    pub fn get_cell_equation_parameters(
+        &self,
+        row: usize,
+        col: usize,
+    ) -> (
+        (usize, usize),
+        Option<(usize, usize)>,
+        Option<(usize, usize)>,
+        Option<i32>,
+        Option<i32>,
+        Type,
+    ) {
         assert!(
             col < self.n && row < self.m,
             "get_cell_value: Invalid cell coordinates ({},{})",
             row,
             col
         );
-        
+
         let cell_ref = self.cells[row][col].borrow();
 
         let coords = cell_ref.get_coordinate();
-        let tcoords = (coords.0,coords.1);
+        let tcoords = (coords.0, coords.1);
         let eq = cell_ref.get_equation();
 
         let ops = eq.get_operands();
 
         let op1 = ops[0].borrow();
         let op2 = ops[1].borrow();
-        
+
         let v1 = op1.get_value();
         let v2 = op2.get_value();
 
@@ -65,16 +74,7 @@ impl SpreadSheet {
         let c2 = Some((op2.get_coordinate().0, op2.get_coordinate().1));
 
         let t = eq.t;
-        (
-            tcoords,
-            c1,
-            c2,
-            v1,
-            v2,
-            t,
-        )
-
-        
+        (tcoords, c1, c2, v1, v2, t)
     }
 
     fn process_cell_equation(&self, row: usize, col: usize) -> Option<i32> {
@@ -237,26 +237,31 @@ impl SpreadSheet {
     }
 
     fn check_target_in_operands(&self, row: usize, col: usize, eq: Equation) -> bool {
-
         // println!("check_target_in_operands: Checking for cell ({},{})", row, col);
         let ops = eq.get_operands().clone();
-        let op_coords: Vec<_> = ops.iter()
+        let op_coords: Vec<_> = ops
+            .iter()
             .filter_map(|op| {
                 let borrowed_op = op.borrow();
-                if borrowed_op.is_cell() { // Assuming has_coordinate checks if get_coordinate is valid
+                if borrowed_op.is_cell() {
+                    // Assuming has_coordinate checks if get_coordinate is valid
                     Some(borrowed_op.get_coordinate().clone())
                 } else {
                     None
                 }
             })
-        .collect();
+            .collect();
 
         if op_coords.iter().any(|&op| op == Coordinate(row, col)) {
             return true;
         }
 
-
-        if eq.t == Type::Sum || eq.t == Type::Avg || eq.t == Type::Dev || eq.t == Type::Min || eq.t ==  Type::Max {
+        if eq.t == Type::Sum
+            || eq.t == Type::Avg
+            || eq.t == Type::Dev
+            || eq.t == Type::Min
+            || eq.t == Type::Max
+        {
             let c1 = eq.get_operands()[0].borrow();
             let c2 = eq.get_operands()[1].borrow();
 

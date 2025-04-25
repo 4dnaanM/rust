@@ -35,17 +35,14 @@ pub struct SerialCell {
 }
 
 impl SerialCell {
-    pub fn compare(
-        &self,
-        other: &SerialCell,
-    ) -> bool {
+    pub fn compare(&self, other: &SerialCell) -> bool {
         self.row == other.row
-        && self.col == other.col
-        && self.c1 == other.c1
-        && self.c2 == other.c2
-        && self.v1 == other.v1
-        && self.v2 == other.v2
-        && self.t == other.t
+            && self.col == other.col
+            && self.c1 == other.c1
+            && self.c2 == other.c2
+            && self.v1 == other.v1
+            && self.v2 == other.v2
+            && self.t == other.t
     }
 }
 
@@ -56,7 +53,6 @@ pub struct CloneSpreadSheet {
 }
 
 impl CloneSpreadSheet {
-
     pub fn new(m: usize, n: usize) -> Self {
         let cells = vec![
             vec![
@@ -104,7 +100,7 @@ impl CloneSpreadSheet {
                     c2,
                     v1,
                     v2,
-                    t
+                    t,
                 };
             }
         }
@@ -174,7 +170,10 @@ impl VersionControl {
             id: self.next_commit,
             msg: commit_msg.to_string(),
             parent: self.curr_commit,
-            cells: self.get_diff_spread(&mut CloneSpreadSheet::clone_spread(spreadsheet), &self.spread_sheet),
+            cells: self.get_diff_spread(
+                &mut CloneSpreadSheet::clone_spread(spreadsheet),
+                &self.spread_sheet,
+            ),
         };
 
         self.map

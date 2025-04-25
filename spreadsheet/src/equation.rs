@@ -195,7 +195,7 @@ impl Equation {
 
         let (val, sleep_time) = self.process_equation_silent(spreadsheet_ref);
         if let Some(sleep_time) = sleep_time {
-            sleep(Duration::from_millis((sleep_time*1000) as u64));
+            sleep(Duration::from_millis((sleep_time * 1000) as u64));
         }
         val
     }
