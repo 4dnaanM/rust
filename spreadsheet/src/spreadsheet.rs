@@ -181,7 +181,7 @@ impl SpreadSheet {
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    pub fn set_cell_value(&mut self, row: usize, col: usize, v: i32) -> Status {
+    pub fn _set_cell_value(&mut self, row: usize, col: usize, v: i32) -> Status {
         assert!(
             col < self.n && row < self.m,
             "set_cell_equation: Invalid cell coordinates ({},{})",
@@ -266,6 +266,7 @@ impl SpreadSheet {
     //     println!("----------------------------------------------------------------------");
     // }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -282,7 +283,7 @@ mod tests {
     #[test]
     fn test_set_and_get_cell_value() {
         let mut spreadsheet = SpreadSheet::new(3, 3);
-        let status = spreadsheet.set_cell_value(1, 1, 42);
+        let status = spreadsheet._set_cell_value(1, 1, 42);
         assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(1, 1), Some(42));
     }
@@ -290,8 +291,8 @@ mod tests {
     #[test]
     fn test_set_cell_equation_addition() {
         let mut spreadsheet = SpreadSheet::new(3, 3);
-        spreadsheet.set_cell_value(0, 0, 10);
-        spreadsheet.set_cell_value(0, 1, 20);
+        spreadsheet._set_cell_value(0, 0, 10);
+        spreadsheet._set_cell_value(0, 1, 20);
 
         let status =
             spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Add);
@@ -302,8 +303,8 @@ mod tests {
     #[test]
     fn test_set_cell_equation_subtraction() {
         let mut spreadsheet = SpreadSheet::new(3, 3);
-        spreadsheet.set_cell_value(0, 0, 50);
-        spreadsheet.set_cell_value(0, 1, 20);
+        spreadsheet._set_cell_value(0, 0, 50);
+        spreadsheet._set_cell_value(0, 1, 20);
 
         let status =
             spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Sub);
@@ -314,8 +315,8 @@ mod tests {
     #[test]
     fn test_cycle_detection() {
         let mut spreadsheet = SpreadSheet::new(3, 3);
-        spreadsheet.set_cell_value(0, 0, 10);
-        spreadsheet.set_cell_value(0, 1, 20);
+        spreadsheet._set_cell_value(0, 0, 10);
+        spreadsheet._set_cell_value(0, 1, 20);
 
         spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Add);
 
@@ -326,7 +327,7 @@ mod tests {
     #[test]
     fn test_set_cell_equation_single_operand() {
         let mut spreadsheet = SpreadSheet::new(3, 3);
-        spreadsheet.set_cell_value(0, 0, 1);
+        spreadsheet._set_cell_value(0, 0, 1);
 
         let status = spreadsheet.set_cell_equation(0, 1, Some((0, 0)), None, None, None, Type::Slp);
         assert_eq!(status, Status::Ok);

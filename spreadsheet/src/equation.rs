@@ -326,10 +326,10 @@ mod tests {
         );
 
         let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
-        spreadsheet.set_cell_value(0, 0, 10);
-        spreadsheet.set_cell_value(0, 1, 5);
-        spreadsheet.set_cell_value(1, 0, 3);
-        spreadsheet.set_cell_value(1, 1, 8);
+        spreadsheet._set_cell_value(0, 0, 10);
+        spreadsheet._set_cell_value(0, 1, 5);
+        spreadsheet._set_cell_value(1, 0, 3);
+        spreadsheet._set_cell_value(1, 1, 8);
 
         assert_eq!(
             equation.process_equation_silent(&spreadsheet),
@@ -348,10 +348,10 @@ mod tests {
         );
 
         let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
-        spreadsheet.set_cell_value(0, 0, 10);
-        spreadsheet.set_cell_value(0, 1, 5);
-        spreadsheet.set_cell_value(1, 0, 3);
-        spreadsheet.set_cell_value(1, 1, 8);
+        spreadsheet._set_cell_value(0, 0, 10);
+        spreadsheet._set_cell_value(0, 1, 5);
+        spreadsheet._set_cell_value(1, 0, 3);
+        spreadsheet._set_cell_value(1, 1, 8);
 
         assert_eq!(
             equation.process_equation_silent(&spreadsheet),
@@ -370,10 +370,10 @@ mod tests {
         );
 
         let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
-        spreadsheet.set_cell_value(0, 0, 10);
-        spreadsheet.set_cell_value(0, 1, 5);
-        spreadsheet.set_cell_value(1, 0, 3);
-        spreadsheet.set_cell_value(1, 1, 8);
+        spreadsheet._set_cell_value(0, 0, 10);
+        spreadsheet._set_cell_value(0, 1, 5);
+        spreadsheet._set_cell_value(1, 0, 3);
+        spreadsheet._set_cell_value(1, 1, 8);
 
         assert_eq!(
             equation.process_equation_silent(&spreadsheet),
@@ -392,10 +392,10 @@ mod tests {
         );
 
         let mut spreadsheet = SpreadSheet::new(10, 10); // Mock or real implementation
-        spreadsheet.set_cell_value(0, 0, 10);
-        spreadsheet.set_cell_value(0, 1, 5);
-        spreadsheet.set_cell_value(1, 0, 3);
-        spreadsheet.set_cell_value(1, 1, 8);
+        spreadsheet._set_cell_value(0, 0, 10);
+        spreadsheet._set_cell_value(0, 1, 5);
+        spreadsheet._set_cell_value(1, 0, 3);
+        spreadsheet._set_cell_value(1, 1, 8);
 
         assert_eq!(
             equation.process_equation_silent(&spreadsheet),
