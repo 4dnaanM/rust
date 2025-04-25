@@ -64,15 +64,18 @@ impl SpreadSheet {
 
         let ops = eq.get_operands();
 
-        let op1 = ops[0].borrow();
-        let op2 = ops[1].borrow();
+        let op1 = if ops.len() > 0 {Some(ops[0].borrow())} else{ None};
+        let op2 = if ops.len() > 1 {Some(ops[1].borrow())} else{ None};
 
-        let v1 = op1.get_value();
-        let v2 = op2.get_value();
+        let (v1, c1) = match op1 {
+            Some(op) => (op.get_value(),if op.is_cell() {Some((op.get_coordinate().0, op.get_coordinate().1))} else {None}),
+            None => (None,None)
+        };
 
-        let c1 = if op1.is_cell() {Some((op1.get_coordinate().0, op1.get_coordinate().1))} else {None};
-        
-        let c2 = if op2.is_cell() {Some((op2.get_coordinate().0, op2.get_coordinate().1))} else {None};
+        let (v2,c2) = match op2 {
+            Some(op) => (op.get_value(),if op.is_cell() {Some((op.get_coordinate().0, op.get_coordinate().1))} else {None}),
+            None => (None,None)
+        };
 
         let t = eq.t;
         (tcoords, c1, c2, v1, v2, t)
