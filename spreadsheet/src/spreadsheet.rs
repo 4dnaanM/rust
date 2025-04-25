@@ -8,8 +8,8 @@ use std::collections::HashMap;
 // all the traversal and updation methods should be defined here like findDownstream, toposort
 #[derive(Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct SpreadSheet {
-    m: usize,
-    n: usize,
+    pub m: usize,
+    pub n: usize,
     pub cells: Vec<Vec<SharedOperand>>,
 }
 

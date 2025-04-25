@@ -5,28 +5,28 @@ use crate::parser::error::Error;
 use crate::parser::print_output::print_sheet;
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::{Status, Type};
-use crate::vcs::vcs_engine::VersionControlSystem;
+use crate::vcs::vcs_engine::VersionControl;
 use std::io::{self, Write};
 use std::time::Instant;
 
 pub fn process_command(
     user_input: &str,
     spreadsheet: &mut SpreadSheet,
-    vcs: &mut VersionControlSystem,
+    vcs: &mut VersionControl,
     row: &mut usize,
     col: &mut usize,
     enable_output: &mut bool,
     quit: &mut bool,
-    max_rows: &usize,
-    max_cols: &usize,
 ) {
+    let max_rows = spreadsheet.m;
+    let max_cols = spreadsheet.n;
     let start = Instant::now();
     let user_command: Result<Command, Error> =
-        parser::command_parser::parse_cmd(user_input, *max_rows, *max_cols);
+        parser::command_parser::parse_cmd(user_input, max_rows, max_cols);
     let Ok(command) = user_command else {
         let duration = start.elapsed();
         if *enable_output {
-            print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
+            print_sheet(1, 1, spreadsheet, max_rows, max_cols);
         }
         print!("[{:.1}] (invalid command) > ", duration.as_secs_f64());
         io::stdout().flush().unwrap();
@@ -59,7 +59,7 @@ pub fn process_command(
             };
 
             if *enable_output {
-                print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
+                print_sheet(1, 1, spreadsheet, max_rows, max_cols);
             }
         }
         Command::Arithmetic(cmd) => {
@@ -99,7 +99,7 @@ pub fn process_command(
             };
 
             if *enable_output {
-                print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
+                print_sheet(1, 1, spreadsheet, max_rows, max_cols);
             }
         }
         Command::UserInteraction(cmd) => {
@@ -107,7 +107,7 @@ pub fn process_command(
             match ui_command.as_str() {
                 "enable_output" => {
                     *enable_output = true;
-                    print_sheet(*row, *col, spreadsheet, *max_rows, *max_cols);
+                    print_sheet(*row, *col, spreadsheet, max_rows, max_cols);
                 }
                 "disable_output" => {
                     *enable_output = false;
@@ -119,7 +119,7 @@ pub fn process_command(
                         } else {
                             *row = 1;
                         }
-                        print_sheet(*row, *col, spreadsheet, *max_rows, *max_cols);
+                        print_sheet(*row, *col, spreadsheet, max_rows, max_cols);
                     }
                 }
                 "a" => {
@@ -129,19 +129,19 @@ pub fn process_command(
                         } else {
                             *col = 1;
                         };
-                        print_sheet(*row, *col, spreadsheet, *max_rows, *max_cols);
+                        print_sheet(*row, *col, spreadsheet, max_rows, max_cols);
                     }
                 }
                 "s" => {
                     if *enable_output {
-                        *row = ((*row) + 10).min(*max_rows - 9);
-                        print_sheet(*row, *col, spreadsheet, *max_rows, *max_cols);
+                        *row = ((*row) + 10).min(max_rows - 9);
+                        print_sheet(*row, *col, spreadsheet, max_rows, max_cols);
                     }
                 }
                 "d" => {
                     if *enable_output {
-                        *col = ((*col) + 10).min(*max_cols - 9);
-                        print_sheet(*row, *col, spreadsheet, *max_rows, *max_cols);
+                        *col = ((*col) + 10).min(max_cols - 9);
+                        print_sheet(*row, *col, spreadsheet, max_rows, max_cols);
                     }
                 }
                 "q" => {
@@ -153,7 +153,7 @@ pub fn process_command(
                         *row = scroll_to_cell.row;
                         *col = scroll_to_cell.col;
                         if *enable_output {
-                            print_sheet(*row, *col, spreadsheet, *max_rows, *max_cols);
+                            print_sheet(*row, *col, spreadsheet, max_rows, max_cols);
                         }
                     };
                 }
@@ -187,7 +187,7 @@ pub fn process_command(
             };
 
             if *enable_output {
-                print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
+                print_sheet(1, 1, spreadsheet, max_rows, max_cols);
             }
         }
         Command::Vcs(cmd) => {
@@ -200,16 +200,16 @@ pub fn process_command(
                 }
                 "commit" => {
                     if let Some(argument) = cmd.argument {
-                        vcs.commit(spreadsheet, &argument);
+                        vcs.commit(&argument, spreadsheet);
                     }
                 }
                 "checkout" => {
                     if let Some(argument) = cmd.argument {
                         if let Ok(commit_id) = argument[0..].parse::<usize>() {
-                            *spreadsheet = vcs.checkout(commit_id as u32, spreadsheet);
+                            *spreadsheet = vcs.checkout(commit_id, spreadsheet);
                         }
                         if *enable_output {
-                            print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
+                            print_sheet(1, 1, spreadsheet, max_rows, max_cols);
                         }
                     }
                 }
