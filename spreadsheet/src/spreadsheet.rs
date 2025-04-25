@@ -37,6 +37,46 @@ impl SpreadSheet {
         Value::get_value(&(self.cells[row][col].borrow()))
     }
 
+    pub fn get_cell_equation_parameters(&self, row: usize, col: usize) -> 
+    ((usize, usize), Option<(usize, usize)>,Option<(usize, usize)>,Option<i32>,Option<i32>,Type)
+    {
+        assert!(
+            col < self.n && row < self.m,
+            "get_cell_value: Invalid cell coordinates ({},{})",
+            row,
+            col
+        );
+        
+        let cell_ref = self.cells[row][col].borrow();
+
+        let coords = cell_ref.get_coordinate();
+        let tcoords = (coords.0,coords.1);
+        let eq = cell_ref.get_equation();
+
+        let ops = eq.get_operands();
+
+        let op1 = ops[0].borrow();
+        let op2 = ops[1].borrow();
+        
+        let v1 = op1.get_value();
+        let v2 = op2.get_value();
+
+        let c1 = Some((op1.get_coordinate().0, op1.get_coordinate().1));
+        let c2 = Some((op2.get_coordinate().0, op2.get_coordinate().1));
+
+        let t = eq.t;
+        (
+            tcoords,
+            c1,
+            c2,
+            v1,
+            v2,
+            t,
+        )
+
+        
+    }
+
     fn process_cell_equation(&self, row: usize, col: usize) -> Option<i32> {
         assert!(
             col < self.n && row < self.m,
@@ -196,32 +236,32 @@ impl SpreadSheet {
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    fn check_target_in_operands(&self, eq: &Equation, row: usize, col: usize) -> bool {
-        let ops = eq.get_operands().clone();
-        let cell_ref = self.cells[row][col].clone();
-        if ops.iter().any(|op| op == &cell_ref) {
-            return true;
-        }
+    // fn check_target_in_operands(&self, eq: &Equation, row: usize, col: usize) -> bool {
+    //     let ops = eq.get_operands().clone();
+    //     let cell_ref = self.cells[row][col].clone();
+    //     if ops.iter().any(|op| op == &cell_ref) {
+    //         return true;
+    //     }
 
-        if eq.t == Type::Sum || eq.t == Type::Avg || eq.t == Type::Dev {
-            let c1 = eq.get_operands()[0].borrow();
-            let c2 = eq.get_operands()[1].borrow();
+    //     if eq.t == Type::Sum || eq.t == Type::Avg || eq.t == Type::Dev {
+    //         let c1 = eq.get_operands()[0].borrow();
+    //         let c2 = eq.get_operands()[1].borrow();
 
-            let y1 = c1.get_coordinate().0;
-            let x1 = c1.get_coordinate().1;
-            let y2 = c2.get_coordinate().0;
-            let x2 = c2.get_coordinate().1;
+    //         let y1 = c1.get_coordinate().0;
+    //         let x1 = c1.get_coordinate().1;
+    //         let y2 = c2.get_coordinate().0;
+    //         let x2 = c2.get_coordinate().1;
 
-            for i in y1..=y2 {
-                for j in x1..=x2 {
-                    if i == row && j == col {
-                        return true;
-                    }
-                }
-            }
-        }
-        false
-    }
+    //         for i in y1..=y2 {
+    //             for j in x1..=x2 {
+    //                 if i == row && j == col {
+    //                     return true;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     false
+    // }
 
     pub fn set_cell_equation_from_eq(&mut self, row: usize, col: usize, eq: Equation) -> Status {
         // print!("New equation: ");
@@ -230,9 +270,9 @@ impl SpreadSheet {
 
         let cell_ref = self.cells[row][col].clone();
 
-        if self.check_target_in_operands(&eq, row, col) {
-            return Status::Err;
-        }
+        // if self.check_target_in_operands(&eq, row, col) {
+        //     return Status::Err;
+        // }
 
         let old_eq = cell_ref.borrow().get_equation().clone();
         cell_ref
