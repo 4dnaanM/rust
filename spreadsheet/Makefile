@@ -19,9 +19,11 @@ clean:
 	$(CARGO) clean
 
 test:
+	rm -rf vcs*
 	$(CARGO) test
 
 coverage:
+	rm -rf vcs*
 	$(CARGO) tarpaulin
 
 docs:
