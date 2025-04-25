@@ -250,7 +250,7 @@ impl SharedOperand {
         SharedOperand(self.0.clone())
     }
 
-    pub fn is_cell(&self) -> bool {
+    pub fn _is_cell(&self) -> bool {
         self.borrow().is_cell()
     }
 }

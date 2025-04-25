@@ -67,7 +67,7 @@ impl CloneSpreadSheet {
             ];
             m
         ];
-        CloneSpreadSheet {cells }
+        CloneSpreadSheet { cells }
     }
 
     pub fn clone_spread(spreadsheet: &mut SpreadSheet) -> Self {
@@ -88,10 +88,15 @@ impl CloneSpreadSheet {
             ];
             m
         ];
-        for i in 0..m {
-            for j in 0..n {
-                let (_cor, c1, c2, v1, v2, t) = spreadsheet.get_cell_equation_parameters(i, j);
-                cells[i][j] = SerialCell {
+        for (i, row) in cells.iter_mut().enumerate().take(m) {
+            for (j, cell) in row.iter_mut().enumerate().take(n) {
+                let params = spreadsheet.get_cell_equation_parameters(i, j);
+                let c1 = params.operand1_coordinates;
+                let c2 = params.operand2_coordinates;
+                let v1 = params.operand1_value;
+                let v2 = params.operand2_value;
+                let t = params.equation_type;
+                *cell = SerialCell {
                     row: i,
                     col: j,
                     c1,
@@ -102,7 +107,7 @@ impl CloneSpreadSheet {
                 };
             }
         }
-        CloneSpreadSheet {cells }
+        CloneSpreadSheet { cells }
     }
 }
 
@@ -142,8 +147,8 @@ impl VersionControl {
             curr_commit: 0,
             next_commit: 1,
             spread_sheet: CloneSpreadSheet::new(m, n),
-            m,
-            n,
+            m: 0,
+            n: 0,
         }
     }
 
@@ -154,7 +159,7 @@ impl VersionControl {
             map,
             vcs_dir,
             curr_commit: 0,
-            next_commit: commit_count as usize + 1,
+            next_commit: commit_count + 1,
             m: serial_vcs.m,
             n: serial_vcs.n,
             spread_sheet: CloneSpreadSheet::new(serial_vcs.m, serial_vcs.n),
@@ -199,7 +204,7 @@ impl VersionControl {
         if !Path::new(vcs_dir).exists() {
             panic!("VCS directory does not exist");
         }
-        
+
         // Create a parent order.
         let mut commit_chain = Vec::new();
         if !self.map.contains_key(&id) {
@@ -234,29 +239,16 @@ impl VersionControl {
         for i in 0..self.m {
             for j in 0..self.n {
                 let cell = &self.spread_sheet.cells[i][j];
-                let (c1, c2, v1, v2, t) = (
-                    cell.c1,
-                    cell.c2,
-                    cell.v1,
-                    cell.v2,
-                    cell.t.clone(),
-                );
-                if t == Type::Nul {
+                let (c1, c2, v1, v2, t) = (cell.c1, cell.c2, cell.v1, cell.v2, cell.t);
+                if t == Type::Nul || (c1.is_none() ^ v1.is_none()) || (c2.is_none() ^ v2.is_none())
+                {
                     continue;
                 }
-                spreadsheet.set_cell_equation(
-                    (i, j),
-                    c1,
-                    c2,
-                    v1,
-                    v2,
-                    t,
-                );
+                spreadsheet.set_cell_equation((i, j), c1, c2, v1, v2, t);
             }
         }
 
         spreadsheet
-
     }
 
     pub fn get_diff_spread(
@@ -264,7 +256,6 @@ impl VersionControl {
         current_spreadsheet: &mut CloneSpreadSheet,
         vcs_spreadsheet: &CloneSpreadSheet,
     ) -> Vec<SerialCell> {
-        
         let mut diff_cells = vec![];
         for i in 0..self.m {
             for j in 0..self.n {
@@ -276,7 +267,7 @@ impl VersionControl {
                 }
             }
         }
-        return diff_cells;
+        diff_cells
     }
 
     pub fn get_m_n(&self) -> (usize, usize) {
@@ -296,7 +287,7 @@ impl SerialVcs {
     pub fn save(vcs: &VersionControl) {
         // used when saved
         let vcs_dir = &vcs.vcs_dir;
-        let serial_vcs = SerialVcs::new(&vcs);
+        let serial_vcs = SerialVcs::new(vcs);
 
         let vcs_path = format!("{}/vcs.json", vcs_dir);
         let file = File::create(&vcs_path).expect("Failed to create VCS file");
@@ -308,5 +299,20 @@ impl SerialVcs {
         let serial_vcs: SerialVcs =
             serde_json::from_reader(file).expect("Failed to deserialize VCS");
         serial_vcs
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::spreadsheet::SpreadSheet;
+
+    #[test]
+    fn test_version_control_new() {
+        let vcs = VersionControl::new("./vcs_test".to_string(), &10, &10);
+        assert_eq!(vcs.get_m_n(), (10, 10));
+        assert_eq!(vcs.curr_commit, 0);
+        assert_eq!(vcs.next_commit, 1);
+        assert!(Path::new("./vcs_test").exists());
     }
 }

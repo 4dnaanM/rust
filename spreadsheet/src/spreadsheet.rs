@@ -13,6 +13,16 @@ pub struct SpreadSheet {
     pub cells: Vec<Vec<SharedOperand>>,
 }
 
+#[derive(Debug, Clone)]
+pub struct CellEquationParameters {
+    pub _coordinates: (usize, usize),
+    pub operand1_coordinates: Option<(usize, usize)>,
+    pub operand2_coordinates: Option<(usize, usize)>,
+    pub operand1_value: Option<i32>,
+    pub operand2_value: Option<i32>,
+    pub equation_type: Type,
+}
+
 impl SpreadSheet {
     pub fn new(m: usize, n: usize) -> Self {
         let mut cells = Vec::<Vec<SharedOperand>>::with_capacity(m);
@@ -37,18 +47,7 @@ impl SpreadSheet {
         Value::get_value(&(self.cells[row][col].borrow()))
     }
 
-    pub fn get_cell_equation_parameters(
-        &self,
-        row: usize,
-        col: usize,
-    ) -> (
-        (usize, usize),
-        Option<(usize, usize)>,
-        Option<(usize, usize)>,
-        Option<i32>,
-        Option<i32>,
-        Type,
-    ) {
+    pub fn get_cell_equation_parameters(&self, row: usize, col: usize) -> CellEquationParameters {
         assert!(
             col < self.n && row < self.m,
             "get_cell_value: Invalid cell coordinates ({},{})",
@@ -64,21 +63,50 @@ impl SpreadSheet {
 
         let ops = eq.get_operands();
 
-        let op1 = if ops.len() > 0 {Some(ops[0].borrow())} else{ None};
-        let op2 = if ops.len() > 1 {Some(ops[1].borrow())} else{ None};
-
-        let (v1, c1) = match op1 {
-            Some(op) => (op.get_value(),if op.is_cell() {Some((op.get_coordinate().0, op.get_coordinate().1))} else {None}),
-            None => (None,None)
+        let op1 = if ops.is_empty() {
+            Some(ops[0].borrow())
+        } else {
+            None
+        };
+        let op2 = if ops.len() > 1 {
+            Some(ops[1].borrow())
+        } else {
+            None
         };
 
-        let (v2,c2) = match op2 {
-            Some(op) => (op.get_value(),if op.is_cell() {Some((op.get_coordinate().0, op.get_coordinate().1))} else {None}),
-            None => (None,None)
+        let (v1, c1) = match op1 {
+            Some(op) => (
+                op.get_value(),
+                if op.is_cell() {
+                    Some((op.get_coordinate().0, op.get_coordinate().1))
+                } else {
+                    None
+                },
+            ),
+            None => (None, None),
+        };
+
+        let (v2, c2) = match op2 {
+            Some(op) => (
+                op.get_value(),
+                if op.is_cell() {
+                    Some((op.get_coordinate().0, op.get_coordinate().1))
+                } else {
+                    None
+                },
+            ),
+            None => (None, None),
         };
 
         let t = eq.t;
-        (tcoords, c1, c2, v1, v2, t)
+        CellEquationParameters {
+            _coordinates: tcoords,
+            operand1_coordinates: c1,
+            operand2_coordinates: c2,
+            operand1_value: v1,
+            operand2_value: v2,
+            equation_type: t,
+        }
     }
 
     fn process_cell_equation(&self, row: usize, col: usize) -> Option<i32> {
@@ -249,7 +277,7 @@ impl SpreadSheet {
                 let borrowed_op = op.borrow();
                 if borrowed_op.is_cell() {
                     // Assuming has_coordinate checks if get_coordinate is valid
-                    Some(borrowed_op.get_coordinate().clone())
+                    Some(*borrowed_op.get_coordinate())
                 } else {
                     None
                 }

@@ -106,6 +106,9 @@ pub fn main() {
 
     let mut vcs = vcs;
     let mut spreadsheet = SpreadSheet::new(m, n);
+    if vcs.get_m_n() != (0, 0) {
+        vcs.commit("Initial_commit", &mut spreadsheet);
+    }
 
     parser::print_output::print_sheet(1, 1, &spreadsheet, m, n);
     print!("[0.0] (ok) > ");

@@ -14,7 +14,7 @@ pub struct Equation {
 
     // each equation should own its list of operands. When equation changes for a cell, construct a whole new one
     pub operands: Vec<SharedOperand>, // References to operands
-                                  // when the equation is dropped, each reference is dropped, decreasing the ref count
+                                      // when the equation is dropped, each reference is dropped, decreasing the ref count
 }
 impl Hash for Equation {
     fn hash<H: Hasher>(&self, state: &mut H) {
