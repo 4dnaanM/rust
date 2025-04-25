@@ -56,7 +56,7 @@ impl VersionControlSystem {
         let commit_path = format!("{}/commit_{}.json", self.vcs_dir, self.next_commit_id);
         let file = File::create(&commit_path).expect("Failed to create commit file");
         serde_json::to_writer(file, &commit).expect("Failed to serialize commit");
-        
+
         self.commits_with_parent
             .insert(self.next_commit_id, (self.current_id, commit.message));
 
@@ -96,7 +96,6 @@ impl VersionControlSystem {
         let file = File::open(&commit_path).expect("Failed to open commit file");
         let commit: Commit = serde_json::from_reader(file).expect("Failed to deserialize commit");
 
-        
         commit.spreadsheet.clone()
     }
 }

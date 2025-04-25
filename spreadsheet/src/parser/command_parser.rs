@@ -70,7 +70,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         if !vcs_command.is_valid_vcs_command() {
             return Err(Error::InvalidInput);
         }
-        return Ok(Command::VCSCommand(vcs_command));
+        return Ok(Command::Vcs(vcs_command));
     }
 
     // First, check for UI command
@@ -79,7 +79,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
             command: command.as_str().to_string(),
             scroll_to_cell: None,
         };
-        return Ok(Command::UserInteractionCommand(user_interaction));
+        return Ok(Command::UserInteraction(user_interaction));
     }
 
     if captures.name("SCROLL_TO_CELL").is_some() {
@@ -98,7 +98,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         if !user_interaction.is_valid_ui_command(max_rows, max_cols) {
             return Err(Error::InvalidInput);
         }
-        return Ok(Command::UserInteractionCommand(user_interaction));
+        return Ok(Command::UserInteraction(user_interaction));
     }
 
     // Second, check for sleep command
@@ -135,7 +135,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         if !sleep_command.is_valid_sleep_command(max_rows, max_cols) {
             return Err(Error::InvalidInput);
         }
-        return Ok(Command::SleepCommand(sleep_command));
+        return Ok(Command::Sleep(sleep_command));
     }
 
     // Third, check for range command
@@ -187,7 +187,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
         if !cmd.is_valid_range_command(max_rows, max_cols) {
             return Err(Error::InvalidInput);
         }
-        return Ok(Command::RangeCommand(cmd));
+        return Ok(Command::Range(cmd));
     }
 
     // Fourth, check for arithmetic command
@@ -247,7 +247,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
             if !cmd.is_valid_arithmetic_command(max_rows, max_cols) {
                 return Err(Error::InvalidInput);
             }
-            return Ok(Command::ArithmeticCommand(cmd));
+            return Ok(Command::Arithmetic(cmd));
         } else {
             let cmd = ArithmeticCommand {
                 target_cell: Value::Cell(target_cell),
@@ -258,7 +258,7 @@ pub fn parse_cmd(user_command: &str, max_rows: usize, max_cols: usize) -> Result
             if !cmd.is_valid_arithmetic_command(max_rows, max_cols) {
                 return Err(Error::InvalidInput);
             }
-            return Ok(Command::ArithmeticCommand(cmd));
+            return Ok(Command::Arithmetic(cmd));
         }
     }
 
@@ -276,14 +276,14 @@ mod tests {
     fn test_ui_command() {
         let input = "w";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::UserInteractionCommand(_))));
+        assert!(matches!(result, Ok(Command::UserInteraction(_))));
     }
 
     #[test]
     fn test_sleep_command_valid() {
         let input = "A1 = SLEEP(B1)";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::SleepCommand(_))));
+        assert!(matches!(result, Ok(Command::Sleep(_))));
     }
 
     // Test invalid sleep command (invalid cell in value)
@@ -307,7 +307,7 @@ mod tests {
     fn test_ui_command_scroll_to_cell() {
         let input = "scroll_to A1";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::UserInteractionCommand(_))));
+        assert!(matches!(result, Ok(Command::UserInteraction(_))));
     }
 
     // Test invalid UI command (unsupported command)
@@ -322,7 +322,7 @@ mod tests {
     fn test_range_command_valid() {
         let input = "A1 = SUM(B1:C1)";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::RangeCommand(_))));
+        assert!(matches!(result, Ok(Command::Range(_))));
     }
 
     #[test]
@@ -336,21 +336,21 @@ mod tests {
     fn test_arithmetic_command_with_operator() {
         let input = "A1 = B1 + 3";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::ArithmeticCommand(_))));
+        assert!(matches!(result, Ok(Command::Arithmetic(_))));
     }
 
     #[test]
     fn test_arithmetic_command_with_two_cell_operands() {
         let input = "A1 = B1 + A1";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::ArithmeticCommand(_))));
+        assert!(matches!(result, Ok(Command::Arithmetic(_))));
     }
 
     #[test]
     fn test_arithmetic_command_without_operator() {
         let input = "A1 = 42";
         let result = parse_cmd(input, MAX_ROWS, MAX_COLS);
-        assert!(matches!(result, Ok(Command::ArithmeticCommand(_))));
+        assert!(matches!(result, Ok(Command::Arithmetic(_))));
     }
 
     #[test]

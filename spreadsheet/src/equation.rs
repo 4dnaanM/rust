@@ -3,12 +3,9 @@ use super::utils::Coordinate;
 use super::utils::Type;
 use super::value::SharedOperand;
 
+use std::hash::{Hash, Hasher};
 use std::thread::sleep;
 use std::time::Duration;
-use std::{
-    hash::{Hash, Hasher},
-    i32,
-};
 
 #[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct Equation {
@@ -31,8 +28,8 @@ impl Equation {
         t: Option<Type>,
         operands: Option<Vec<SharedOperand>>,
     ) -> Self {
-        let t = t.unwrap_or(Type::NUL);
-        let operands = if t == Type::NUL {
+        let t = t.unwrap_or(Type::Nul);
+        let operands = if t == Type::Nul {
             Vec::<SharedOperand>::new()
         } else {
             operands.expect("Operands cannot be None when Type is not NUL")
@@ -62,7 +59,7 @@ impl Equation {
         // second ret value is time to sleep
 
         let t = self.t;
-        if t == Type::SLP {
+        if t == Type::Slp {
             let c = self.operands[0].borrow().get_value();
 
             if c.is_none() {
@@ -90,14 +87,14 @@ impl Equation {
         let v2 = v2.unwrap();
 
         match t {
-            Type::ADD => (Some(v1 + v2), None),
-            Type::SUB => (Some(v1 - v2), None),
-            Type::MUL => (Some(v1 * v2), None),
-            Type::DIV => match v2 {
+            Type::Add => (Some(v1 + v2), None),
+            Type::Sub => (Some(v1 - v2), None),
+            Type::Mul => (Some(v1 * v2), None),
+            Type::Div => match v2 {
                 0 => (None, None),
                 _ => (Some(v1 / v2), None),
             },
-            Type::MIN => {
+            Type::Min => {
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
@@ -112,7 +109,7 @@ impl Equation {
                 }
                 (Some(min), None)
             }
-            Type::MAX => {
+            Type::Max => {
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
@@ -128,7 +125,7 @@ impl Equation {
                 (Some(max), None)
             }
 
-            Type::SUM => {
+            Type::Sum => {
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
@@ -143,7 +140,7 @@ impl Equation {
                 }
                 (Some(sum), None)
             }
-            Type::AVG => {
+            Type::Avg => {
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
@@ -161,7 +158,7 @@ impl Equation {
                 }
                 (Some(sum / count), None)
             }
-            Type::DEV => {
+            Type::Dev => {
                 let y1 = operands[0].borrow().get_coordinate().0;
                 let x1 = operands[0].borrow().get_coordinate().1;
                 let y2 = operands[1].borrow().get_coordinate().0;
@@ -242,7 +239,7 @@ mod tests {
         let operand2 = create_mock_operand(3, (0, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::ADD),
+            Some(Type::Add),
             Some(vec![operand1, operand2]),
         );
 
@@ -259,7 +256,7 @@ mod tests {
         let operand2 = create_mock_operand(4, (0, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::SUB),
+            Some(Type::Sub),
             Some(vec![operand1, operand2]),
         );
 
@@ -276,7 +273,7 @@ mod tests {
         let operand2 = create_mock_operand(6, (0, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::MUL),
+            Some(Type::Mul),
             Some(vec![operand1, operand2]),
         );
 
@@ -293,7 +290,7 @@ mod tests {
         let operand2 = create_mock_operand(4, (0, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::DIV),
+            Some(Type::Div),
             Some(vec![operand1, operand2]),
         );
 
@@ -310,7 +307,7 @@ mod tests {
         let operand2 = create_mock_operand(0, (0, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::DIV),
+            Some(Type::Div),
             Some(vec![operand1, operand2]),
         );
 
@@ -324,7 +321,7 @@ mod tests {
         let operand2 = create_mock_operand(0, (1, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::MIN),
+            Some(Type::Min),
             Some(vec![operand1, operand2]),
         );
 
@@ -346,7 +343,7 @@ mod tests {
         let operand2 = create_mock_operand(0, (1, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::MAX),
+            Some(Type::Max),
             Some(vec![operand1, operand2]),
         );
 
@@ -368,7 +365,7 @@ mod tests {
         let operand2 = create_mock_operand(0, (1, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::SUM),
+            Some(Type::Sum),
             Some(vec![operand1, operand2]),
         );
 
@@ -390,7 +387,7 @@ mod tests {
         let operand2 = create_mock_operand(0, (1, 1));
         let equation = Equation::new(
             Coordinate(0, 2),
-            Some(Type::AVG),
+            Some(Type::Avg),
             Some(vec![operand1, operand2]),
         );
 

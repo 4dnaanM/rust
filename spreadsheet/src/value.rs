@@ -12,7 +12,7 @@ use std::hash::{Hash, Hasher};
 // callers should work only with sharedoperand and operand
 
 #[derive(Eq, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
-struct Cell {
+pub struct Cell {
     pub coordinate: Coordinate,
     pub value: Option<i32>,
 
@@ -68,11 +68,11 @@ impl Cell {
 
         let new_operands = self.equation.get_operands().clone();
 
-        if self.equation.t == Type::SUM
-            || self.equation.t == Type::AVG
-            || self.equation.t == Type::DEV
-            || self.equation.t == Type::MIN
-            || self.equation.t == Type::MAX
+        if self.equation.t == Type::Sum
+            || self.equation.t == Type::Avg
+            || self.equation.t == Type::Dev
+            || self.equation.t == Type::Min
+            || self.equation.t == Type::Max
         {
             let y1 = new_operands[0].borrow().get_coordinate().0;
             let x1 = new_operands[0].borrow().get_coordinate().1;
@@ -118,7 +118,7 @@ impl Cell {
 }
 
 #[derive(Eq, PartialEq, Clone, Hash, serde_derive::Serialize, serde_derive::Deserialize)]
-struct Constant {
+pub struct Constant {
     // coordinate: Coordinate,
     value: i32,
 }

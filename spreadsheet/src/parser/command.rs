@@ -143,22 +143,20 @@ pub struct VCSCommand {
 impl VCSCommand {
     pub fn is_valid_vcs_command(&self) -> bool {
         let command = self.command.as_str();
-        match (command, self.argument.clone()) {
-            ("list", Some(_)) => false,
-            ("commit", None) => false,
-            ("checkout", None) => false,
-            _ => true,
-        }
+        !matches!(
+            (command, self.argument.clone()),
+            ("list", Some(_)) | ("commit", None) | ("checkout", None)
+        )
     }
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Command {
-    RangeCommand(RangeCommand),
-    ArithmeticCommand(ArithmeticCommand),
-    UserInteractionCommand(UserInteractionCommand),
-    SleepCommand(SleepCommand),
-    VCSCommand(VCSCommand),
+    Range(RangeCommand),
+    Arithmetic(ArithmeticCommand),
+    UserInteraction(UserInteractionCommand),
+    Sleep(SleepCommand),
+    Vcs(VCSCommand),
 }
 
 #[cfg(test)]

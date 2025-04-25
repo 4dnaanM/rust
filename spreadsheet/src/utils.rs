@@ -57,48 +57,33 @@ impl From<(usize, usize)> for Coordinate {
 }
 #[derive(Eq, PartialEq, Clone, Copy, Debug, serde_derive::Serialize, serde_derive::Deserialize)]
 pub enum Type {
-    NUL,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    MIN,
-    MAX,
-    SUM,
-    AVG,
-    DEV,
-    SLP,
+    Nul,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Min,
+    Max,
+    Sum,
+    Avg,
+    Dev,
+    Slp,
 }
 
 impl Type {
-    pub fn to_str(&self) -> &str {
-        match self {
-            Type::ADD => "ADD",
-            Type::SUB => "SUB",
-            Type::MUL => "MUL",
-            Type::DIV => "DIV",
-            Type::NUL => "NUL",
-            Type::MIN => "MIN",
-            Type::MAX => "MAX",
-            Type::SUM => "SUM",
-            Type::AVG => "AVG",
-            Type::DEV => "DEV",
-            Type::SLP => "SLP",
-        }
-    }
     pub fn from_str(s: &str) -> Type {
         match s {
-            "+" => Type::ADD,
-            "-" => Type::SUB,
-            "*" => Type::MUL,
-            "/" => Type::DIV,
-            "NUL" => Type::NUL,
-            "MIN" => Type::MIN,
-            "MAX" => Type::MAX,
-            "SUM" => Type::SUM,
-            "AVG" => Type::AVG,
-            "STDEV" => Type::DEV,
-            "SLEEP" => Type::SLP,
+            "+" => Type::Add,
+            "-" => Type::Sub,
+            "*" => Type::Mul,
+            "/" => Type::Div,
+            "NUL" => Type::Nul,
+            "MIN" => Type::Min,
+            "MAX" => Type::Max,
+            "SUM" => Type::Sum,
+            "AVG" => Type::Avg,
+            "STDEV" => Type::Dev,
+            "SLEEP" => Type::Slp,
             _ => panic!("Unknown type: {}", s),
         }
     }
@@ -106,8 +91,8 @@ impl Type {
 
 #[derive(Eq, PartialEq, Debug)]
 pub enum Status {
-    OK,
-    ERR,
+    Ok,
+    Err,
 }
 
 #[cfg(test)]
@@ -129,35 +114,19 @@ mod tests {
         assert_eq!(coord.1, 6);
     }
 
-    // Tests for Type enum
-    #[test]
-    fn test_type_to_str() {
-        assert_eq!(Type::ADD.to_str(), "ADD");
-        assert_eq!(Type::SUB.to_str(), "SUB");
-        assert_eq!(Type::MUL.to_str(), "MUL");
-        assert_eq!(Type::DIV.to_str(), "DIV");
-        assert_eq!(Type::NUL.to_str(), "NUL");
-        assert_eq!(Type::MIN.to_str(), "MIN");
-        assert_eq!(Type::MAX.to_str(), "MAX");
-        assert_eq!(Type::SUM.to_str(), "SUM");
-        assert_eq!(Type::AVG.to_str(), "AVG");
-        assert_eq!(Type::DEV.to_str(), "DEV");
-        assert_eq!(Type::SLP.to_str(), "SLP");
-    }
-
     #[test]
     fn test_type_from_str() {
-        assert_eq!(Type::from_str("+"), Type::ADD);
-        assert_eq!(Type::from_str("-"), Type::SUB);
-        assert_eq!(Type::from_str("*"), Type::MUL);
-        assert_eq!(Type::from_str("/"), Type::DIV);
-        assert_eq!(Type::from_str("NUL"), Type::NUL);
-        assert_eq!(Type::from_str("MIN"), Type::MIN);
-        assert_eq!(Type::from_str("MAX"), Type::MAX);
-        assert_eq!(Type::from_str("SUM"), Type::SUM);
-        assert_eq!(Type::from_str("AVG"), Type::AVG);
-        assert_eq!(Type::from_str("STDEV"), Type::DEV);
-        assert_eq!(Type::from_str("SLEEP"), Type::SLP);
+        assert_eq!(Type::from_str("+"), Type::Add);
+        assert_eq!(Type::from_str("-"), Type::Sub);
+        assert_eq!(Type::from_str("*"), Type::Mul);
+        assert_eq!(Type::from_str("/"), Type::Div);
+        assert_eq!(Type::from_str("NUL"), Type::Nul);
+        assert_eq!(Type::from_str("MIN"), Type::Min);
+        assert_eq!(Type::from_str("MAX"), Type::Max);
+        assert_eq!(Type::from_str("SUM"), Type::Sum);
+        assert_eq!(Type::from_str("AVG"), Type::Avg);
+        assert_eq!(Type::from_str("STDEV"), Type::Dev);
+        assert_eq!(Type::from_str("SLEEP"), Type::Slp);
     }
 
     #[test]

@@ -144,7 +144,7 @@ impl SpreadSheet {
             row,
             col
         );
-        if t == Type::SLP {
+        if t == Type::Slp {
             assert!(
                 c1.is_none() ^ v1.is_none(),
                 "set_cell_equation: Specify either a cell coordinate or a value"
@@ -192,7 +192,7 @@ impl SpreadSheet {
         let op1 = SharedOperand::new(Value::new(None::<Coordinate>, Some(v)));
         let op2 = SharedOperand::new(Value::new(None::<Coordinate>, Some(0)));
 
-        let eq = Equation::new(Coordinate(row, col), Some(Type::ADD), Some(vec![op1, op2]));
+        let eq = Equation::new(Coordinate(row, col), Some(Type::Add), Some(vec![op1, op2]));
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
@@ -203,7 +203,7 @@ impl SpreadSheet {
             return true;
         }
 
-        if eq.t == Type::SUM || eq.t == Type::AVG || eq.t == Type::DEV {
+        if eq.t == Type::Sum || eq.t == Type::Avg || eq.t == Type::Dev {
             let c1 = eq.get_operands()[0].borrow();
             let c2 = eq.get_operands()[1].borrow();
 
@@ -231,7 +231,7 @@ impl SpreadSheet {
         let cell_ref = self.cells[row][col].clone();
 
         if self.check_target_in_operands(&eq, row, col) {
-            return Status::ERR;
+            return Status::Err;
         }
 
         let old_eq = cell_ref.borrow().get_equation().clone();
@@ -249,10 +249,10 @@ impl SpreadSheet {
             // print!("Old equation: ");
             // cell_ref.borrow_mut().get_equation().print();
             // println!();
-            return Status::ERR;
+            return Status::Err;
         };
 
-        Status::OK
+        Status::Ok
     }
 
     // pub fn print(&self) {
@@ -283,7 +283,7 @@ mod tests {
     fn test_set_and_get_cell_value() {
         let mut spreadsheet = SpreadSheet::new(3, 3);
         let status = spreadsheet.set_cell_value(1, 1, 42);
-        assert_eq!(status, Status::OK);
+        assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(1, 1), Some(42));
     }
 
@@ -294,8 +294,8 @@ mod tests {
         spreadsheet.set_cell_value(0, 1, 20);
 
         let status =
-            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::ADD);
-        assert_eq!(status, Status::OK);
+            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Add);
+        assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
     }
 
@@ -306,8 +306,8 @@ mod tests {
         spreadsheet.set_cell_value(0, 1, 20);
 
         let status =
-            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::SUB);
-        assert_eq!(status, Status::OK);
+            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Sub);
+        assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
     }
 
@@ -317,10 +317,10 @@ mod tests {
         spreadsheet.set_cell_value(0, 0, 10);
         spreadsheet.set_cell_value(0, 1, 20);
 
-        spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::ADD);
+        spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Add);
 
-        let status = spreadsheet.set_cell_equation(0, 0, Some((0, 2)), None, None, None, Type::ADD);
-        assert_eq!(status, Status::ERR); // Cycle detected
+        let status = spreadsheet.set_cell_equation(0, 0, Some((0, 2)), None, None, None, Type::Add);
+        assert_eq!(status, Status::Err); // Cycle detected
     }
 
     #[test]
@@ -328,8 +328,8 @@ mod tests {
         let mut spreadsheet = SpreadSheet::new(3, 3);
         spreadsheet.set_cell_value(0, 0, 1);
 
-        let status = spreadsheet.set_cell_equation(0, 1, Some((0, 0)), None, None, None, Type::SLP);
-        assert_eq!(status, Status::OK);
+        let status = spreadsheet.set_cell_equation(0, 1, Some((0, 0)), None, None, None, Type::Slp);
+        assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(0, 1), Some(1));
     }
 }

@@ -1,19 +1,29 @@
-# Makefile for running Rust project in release mode
-
 PROJECT_DIR := spreadsheet
 CARGO := cargo
-CARGO_FLAGS := --manifest-path $(PROJECT_DIR)/Cargo.toml
 
 .PHONY: all build run clean
 
 all: build 
 
 build:
+	make clean
 	$(CARGO) build --release
 
 run:
+	make clean
 	$(CARGO) run --release
 
 clean:
 	$(CARGO) clean
 
+test:
+	$(CARGO) test
+
+coverage:
+	$(CARGO) tarpaulin
+
+ext1:
+	$(CARGO) run --release
+
+docs:
+	$(CARGO) doc

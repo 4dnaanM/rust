@@ -5,7 +5,7 @@ use crate::parser::error::Error;
 use crate::parser::print_output::print_sheet;
 use crate::spreadsheet::SpreadSheet;
 use crate::utils::{Status, Type};
-use crate::vcs::vcs::VersionControlSystem;
+use crate::vcs::vcs_engine::VersionControlSystem;
 use std::io::{self, Write};
 use std::time::Instant;
 
@@ -22,7 +22,7 @@ pub fn process_command(
 ) {
     let start = Instant::now();
     let user_command: Result<Command, Error> =
-        parser::parser::parse_cmd(user_input, *max_rows, *max_cols);
+        parser::command_parser::parse_cmd(user_input, *max_rows, *max_cols);
     let Ok(command) = user_command else {
         let duration = start.elapsed();
         if *enable_output {
@@ -34,7 +34,7 @@ pub fn process_command(
     };
     let status;
     match command {
-        Command::RangeCommand(cmd) => {
+        Command::Range(cmd) => {
             let Value::Cell(cell) = cmd.target_cell else {
                 panic!();
             };
@@ -54,15 +54,15 @@ pub fn process_command(
                 None,
                 t,
             ) {
-                Status::OK => true,
-                Status::ERR => false,
+                Status::Ok => true,
+                Status::Err => false,
             };
 
             if *enable_output {
                 print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
             }
         }
-        Command::ArithmeticCommand(cmd) => {
+        Command::Arithmetic(cmd) => {
             let Value::Cell(cell) = cmd.target_cell else {
                 panic!();
             };
@@ -94,15 +94,15 @@ pub fn process_command(
                 const_2,
                 t,
             ) {
-                Status::OK => true,
-                Status::ERR => false,
+                Status::Ok => true,
+                Status::Err => false,
             };
 
             if *enable_output {
                 print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
             }
         }
-        Command::UserInteractionCommand(cmd) => {
+        Command::UserInteraction(cmd) => {
             let ui_command = cmd.command.clone();
             match ui_command.as_str() {
                 "enable_output" => {
@@ -161,7 +161,7 @@ pub fn process_command(
             }
             status = true;
         }
-        Command::SleepCommand(cmd) => {
+        Command::Sleep(cmd) => {
             let Value::Cell(target_cell) = cmd.target_cell else {
                 panic!();
             };
@@ -171,7 +171,7 @@ pub fn process_command(
                 Value::Constant(constant) => (None, Some(constant)),
             };
 
-            let t = Type::SLP;
+            let t = Type::Slp;
 
             status = match spreadsheet.set_cell_equation(
                 target_cell.row - 1,
@@ -182,15 +182,15 @@ pub fn process_command(
                 None,
                 t,
             ) {
-                Status::OK => true,
-                Status::ERR => false,
+                Status::Ok => true,
+                Status::Err => false,
             };
 
             if *enable_output {
                 print_sheet(1, 1, spreadsheet, *max_rows, *max_cols);
             }
         }
-        Command::VCSCommand(cmd) => {
+        Command::Vcs(cmd) => {
             status = true;
             let command = cmd.command.clone();
             let command = command.as_str();
