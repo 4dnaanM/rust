@@ -48,7 +48,7 @@ pub fn main() {
             }
         };
 
-        if m == 0 || m >= 999 || n == 0 || n >= 18278 {
+        if m == 0 || m > 999 || n == 0 || n > 18278 {
             println!(
                 "Invalid m or n value. m should be between 1 and 999, n should be between 1 and 18278."
             );
