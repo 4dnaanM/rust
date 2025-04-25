@@ -13,7 +13,7 @@ pub struct Equation {
     pub t: Type,
 
     // each equation should own its list of operands. When equation changes for a cell, construct a whole new one
-    operands: Vec<SharedOperand>, // References to operands
+    pub operands: Vec<SharedOperand>, // References to operands
                                   // when the equation is dropped, each reference is dropped, decreasing the ref count
 }
 impl Hash for Equation {

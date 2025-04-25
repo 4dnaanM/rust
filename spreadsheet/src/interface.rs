@@ -193,17 +193,18 @@ pub fn process_command(
             let command = command.as_str();
             match command {
                 "list" => {
-                    // vcs.list();
+                    vcs.list();
                 }
                 "commit" => {
                     if let Some(argument) = cmd.argument {
-                        // vcs.commit(&argument, spreadsheet);
+                        vcs.commit(&argument, spreadsheet);
                     }
                 }
                 "checkout" => {
                     if let Some(argument) = cmd.argument {
                         if let Ok(commit_id) = argument[0..].parse::<usize>() {
-                            // *spreadsheet = vcs.checkout(commit_id, spreadsheet);
+                            let new_spreadsheet = vcs.checkout(commit_id);
+                            *spreadsheet = new_spreadsheet;
                         }
                         if *enable_output {
                             print_sheet(1, 1, spreadsheet, max_rows, max_cols);

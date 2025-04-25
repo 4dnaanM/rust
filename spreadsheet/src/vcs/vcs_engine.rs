@@ -3,8 +3,8 @@ use std::fs;
 use std::fs::File;
 use std::path::Path;
 
-use crate::spreadsheet::{self, SpreadSheet};
-use crate::utils::{Status, Type};
+use crate::spreadsheet::SpreadSheet;
+use crate::utils::Type;
 
 pub struct VersionControl {
     map: HashMap<usize, (usize, String)>,
@@ -47,8 +47,6 @@ impl SerialCell {
 }
 
 pub struct CloneSpreadSheet {
-    m: usize,
-    n: usize,
     cells: Vec<Vec<SerialCell>>,
 }
 
@@ -69,7 +67,7 @@ impl CloneSpreadSheet {
             ];
             m
         ];
-        CloneSpreadSheet { m, n, cells }
+        CloneSpreadSheet {cells }
     }
 
     pub fn clone_spread(spreadsheet: &mut SpreadSheet) -> Self {
@@ -104,15 +102,13 @@ impl CloneSpreadSheet {
                 };
             }
         }
-        CloneSpreadSheet { m, n, cells }
+        CloneSpreadSheet {cells }
     }
 }
 
 #[derive(serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct SerialSheetDiff {
     id: usize,
-    msg: String,
-    parent: usize,
     cells: Vec<SerialCell>,
 }
 
@@ -168,8 +164,6 @@ impl VersionControl {
     pub fn commit(&mut self, commit_msg: &str, spreadsheet: &mut SpreadSheet) {
         let serial_sheet_diff = SerialSheetDiff {
             id: self.next_commit,
-            msg: commit_msg.to_string(),
-            parent: self.curr_commit,
             cells: self.get_diff_spread(
                 &mut CloneSpreadSheet::clone_spread(spreadsheet),
                 &self.spread_sheet,
@@ -179,7 +173,7 @@ impl VersionControl {
         self.map
             .insert(self.next_commit, (self.curr_commit, commit_msg.to_string()));
 
-        let commit_path = format!("{}/commit_{}.json", self.vcs_dir, self.curr_commit);
+        let commit_path = format!("{}/commit_{}.json", self.vcs_dir, self.next_commit);
         let file = File::create(&commit_path).expect("Failed to create commit file");
         serde_json::to_writer(file, &serial_sheet_diff).expect("Failed to serialize commit");
 
@@ -199,12 +193,70 @@ impl VersionControl {
         }
     }
 
-    pub fn checkout(&mut self, id: usize, spreadsheet: &mut SpreadSheet) -> SpreadSheet {
+    pub fn checkout(&mut self, id: usize) -> SpreadSheet {
         let vcs_dir = &self.vcs_dir;
+        self.spread_sheet = CloneSpreadSheet::new(self.m, self.n);
+        if !Path::new(vcs_dir).exists() {
+            panic!("VCS directory does not exist");
+        }
+        
+        // Create a parent order.
+        let mut commit_chain = Vec::new();
+        if !self.map.contains_key(&id) {
+            panic!("Commit id {} not found in VCS", id);
+        }
+        commit_chain.push(id);
+        while *commit_chain.last().unwrap() != 1 {
+            let last = *commit_chain.last().unwrap();
+            let &(parent, _) = self.map.get(&last).unwrap_or_else(|| {
+                panic!("Commit {} not found in VCS while traversing parents", last)
+            });
+            if parent == 0 {
+                panic!("Encountered an invalid parent (0) for commit {}", last);
+            }
+            commit_chain.push(parent);
+        }
 
-        // Create a parent string.
+        commit_chain.reverse();
+        for commit_id in commit_chain {
+            let commit_path = format!("{}/commit_{}.json", vcs_dir, commit_id);
+            let file = File::open(&commit_path).expect("Failed to open commit file");
+            let serial_sheet_diff: SerialSheetDiff =
+                serde_json::from_reader(file).expect("Failed to deserialize commit");
 
-        spreadsheet.clone()
+            for cell in serial_sheet_diff.cells {
+                let (row, col) = (cell.row, cell.col);
+                self.spread_sheet.cells[row][col] = cell;
+            }
+        }
+
+        let mut spreadsheet = SpreadSheet::new(self.m, self.n);
+        for i in 0..self.m {
+            for j in 0..self.n {
+                let cell = &self.spread_sheet.cells[i][j];
+                let (c1, c2, v1, v2, t) = (
+                    cell.c1,
+                    cell.c2,
+                    cell.v1,
+                    cell.v2,
+                    cell.t.clone(),
+                );
+                if t == Type::Nul {
+                    continue;
+                }
+                spreadsheet.set_cell_equation(
+                    (i, j),
+                    c1,
+                    c2,
+                    v1,
+                    v2,
+                    t,
+                );
+            }
+        }
+
+        spreadsheet
+
     }
 
     pub fn get_diff_spread(
@@ -212,38 +264,19 @@ impl VersionControl {
         current_spreadsheet: &mut CloneSpreadSheet,
         vcs_spreadsheet: &CloneSpreadSheet,
     ) -> Vec<SerialCell> {
-        return vec![];
-        // let mut diff = Vec::new();
-        // let m = self.m;
-        // let n = self.n;
-        // for i in 0..m {
-        //     for j in 0..n {
-        //         if Cell::check_diff_cells(
-        //             &current_spreadsheet.get_cell(i, j),
-        //             &vcs_spreadsheet.get_cell(i, j),
-        //         ) {
-        //             let status = current_spreadsheet.get_cell_value(i, j).is_some();
+        
+        let mut diff_cells = vec![];
+        for i in 0..self.m {
+            for j in 0..self.n {
+                let current_cell = &current_spreadsheet.cells[i][j];
+                let vcs_cell = &vcs_spreadsheet.cells[i][j];
 
-        //             let val = if status {
-        //                 current_spreadsheet.get_cell_value(i, j).unwrap()
-        //             } else {
-        //                 0
-        //             };
-        //             let (op, op_val, operands) = current_spreadsheet.get_op_serial(i, j);
-        //             let cell = SerialCell {
-        //                 row: i,
-        //                 col: j,
-        //                 status,
-        //                 val,
-        //                 op,
-        //                 op_val,
-        //                 operands,
-        //             };
-        //             diff.push(cell);
-        //         }
-        //     }
-        // }
-        // diff
+                if !current_cell.compare(vcs_cell) {
+                    diff_cells.push(current_cell.clone());
+                }
+            }
+        }
+        return diff_cells;
     }
 
     pub fn get_m_n(&self) -> (usize, usize) {
