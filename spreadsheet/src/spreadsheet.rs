@@ -130,14 +130,14 @@ impl SpreadSheet {
 
     pub fn set_cell_equation(
         &mut self,
-        row: usize,
-        col: usize,
+        cor: (usize, usize),
         c1: Option<(usize, usize)>,
         c2: Option<(usize, usize)>,
         v1: Option<i32>,
         v2: Option<i32>,
         t: Type,
     ) -> Status {
+        let (row, col) = cor;
         assert!(
             col < self.n && row < self.m,
             "set_cell_equation: Invalid cell coordinates ({},{})",
@@ -294,8 +294,14 @@ mod tests {
         spreadsheet._set_cell_value(0, 0, 10);
         spreadsheet._set_cell_value(0, 1, 20);
 
-        let status =
-            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Add);
+        let status = spreadsheet.set_cell_equation(
+            (0, 2),
+            Some((0, 0)),
+            Some((0, 1)),
+            None,
+            None,
+            Type::Add,
+        );
         assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
     }
@@ -306,8 +312,14 @@ mod tests {
         spreadsheet._set_cell_value(0, 0, 50);
         spreadsheet._set_cell_value(0, 1, 20);
 
-        let status =
-            spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Sub);
+        let status = spreadsheet.set_cell_equation(
+            (0, 2),
+            Some((0, 0)),
+            Some((0, 1)),
+            None,
+            None,
+            Type::Sub,
+        );
         assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(0, 2), Some(30));
     }
@@ -318,9 +330,10 @@ mod tests {
         spreadsheet._set_cell_value(0, 0, 10);
         spreadsheet._set_cell_value(0, 1, 20);
 
-        spreadsheet.set_cell_equation(0, 2, Some((0, 0)), Some((0, 1)), None, None, Type::Add);
+        spreadsheet.set_cell_equation((0, 2), Some((0, 0)), Some((0, 1)), None, None, Type::Add);
 
-        let status = spreadsheet.set_cell_equation(0, 0, Some((0, 2)), None, None, None, Type::Add);
+        let status =
+            spreadsheet.set_cell_equation((0, 0), Some((0, 2)), None, None, None, Type::Add);
         assert_eq!(status, Status::Err); // Cycle detected
     }
 
@@ -329,7 +342,8 @@ mod tests {
         let mut spreadsheet = SpreadSheet::new(3, 3);
         spreadsheet._set_cell_value(0, 0, 1);
 
-        let status = spreadsheet.set_cell_equation(0, 1, Some((0, 0)), None, None, None, Type::Slp);
+        let status =
+            spreadsheet.set_cell_equation((0, 1), Some((0, 0)), None, None, None, Type::Slp);
         assert_eq!(status, Status::Ok);
         assert_eq!(spreadsheet.get_cell_value(0, 1), Some(1));
     }

@@ -46,8 +46,7 @@ pub fn process_command(
             };
             let t = Type::from_str(cmd.function.as_str());
             status = match spreadsheet.set_cell_equation(
-                cell.row - 1,
-                cell.col - 1,
+                (cell.row - 1, cell.col - 1),
                 Some((operand_1.row - 1, operand_1.col - 1)),
                 Some((operand_2.row - 1, operand_2.col - 1)),
                 None,
@@ -86,8 +85,7 @@ pub fn process_command(
             };
 
             status = match spreadsheet.set_cell_equation(
-                cell.row - 1,
-                cell.col - 1,
+                (cell.row - 1, cell.col - 1),
                 cell_1,
                 cell_2,
                 const_1,
@@ -174,8 +172,7 @@ pub fn process_command(
             let t = Type::Slp;
 
             status = match spreadsheet.set_cell_equation(
-                target_cell.row - 1,
-                target_cell.col - 1,
+                (target_cell.row - 1, target_cell.col - 1),
                 cell_1,
                 None,
                 const_1,
@@ -196,17 +193,17 @@ pub fn process_command(
             let command = command.as_str();
             match command {
                 "list" => {
-                    vcs.list();
+                    // vcs.list();
                 }
                 "commit" => {
                     if let Some(argument) = cmd.argument {
-                        vcs.commit(&argument, spreadsheet);
+                        // vcs.commit(&argument, spreadsheet);
                     }
                 }
                 "checkout" => {
                     if let Some(argument) = cmd.argument {
                         if let Ok(commit_id) = argument[0..].parse::<usize>() {
-                            *spreadsheet = vcs.checkout(commit_id, spreadsheet);
+                            // *spreadsheet = vcs.checkout(commit_id, spreadsheet);
                         }
                         if *enable_output {
                             print_sheet(1, 1, spreadsheet, max_rows, max_cols);
