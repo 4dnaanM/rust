@@ -305,7 +305,6 @@ impl SerialVcs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::spreadsheet::SpreadSheet;
 
     #[test]
     fn test_version_control_new() {
