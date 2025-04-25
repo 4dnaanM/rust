@@ -9,6 +9,12 @@ build:
 	make clean
 	$(CARGO) build --release
 
+run:
+	make build
+	@read -p "Enter number of rows: " rows; \
+	 read -p "Enter number of columns: " cols; \
+	 cargo run --release -- $$rows $$cols
+
 clean:
 	$(CARGO) clean
 
