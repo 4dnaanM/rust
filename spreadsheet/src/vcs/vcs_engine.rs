@@ -11,19 +11,19 @@ pub struct VersionControl {
     vcs_dir: String,
     curr_commit: usize,
     next_commit: usize,
-    spread_sheet: SpreadSheet,
+    spread_sheet: CloneSpreadSheet,
     m: usize,
     n: usize,
 }
 
-#[derive(serde_derive::Serialize, serde_derive::Deserialize)]
+#[derive(Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct SerialVcs {
     map: HashMap<usize, (usize, String)>,
     m: usize,
     n: usize,
 }
 
-#[derive(serde_derive::Serialize, serde_derive::Deserialize)]
+#[derive(Clone, serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct SerialCell {
     row: usize,
     col: usize,
@@ -34,48 +34,83 @@ pub struct SerialCell {
     t: Type,
 }
 
-// pub struct CloneSpreadSheet {
-//     m: usize,
-//     n: usize,
-//     cells: Vec<Vec<SerialCell>>,
-// }
+impl SerialCell {
+    pub fn compare(
+        &self,
+        other: &SerialCell,
+    ) -> bool {
+        self.row == other.row
+        && self.col == other.col
+        && self.c1 == other.c1
+        && self.c2 == other.c2
+        && self.v1 == other.v1
+        && self.v2 == other.v2
+        && self.t == other.t
+    }
+}
 
-// impl CloneSpreadSheet {
-//     pub fn clone_spread(spreadsheet: &mut SpreadSheet) -> Self {
-//         let m = spreadsheet.m;
-//         let n = spreadsheet.n;
-//         let mut cells = vec![
-//             vec![
-//                 SerialCell {
-//                     row: 0,
-//                     col: 0,
-//                     c1: None,
-//                     c2: None,
-//                     v1: None,
-//                     v2: None,
-//                     t: Type::Nul
-//                 };
-//                 n
-//             ];
-//             m
-//         ];
-//         for i in 0..m {
-//             for j in 0..n {
-//                 let cell = spreadsheet.get_cell(i, j);
-//                 cells[i][j] = SerialCell {
-//                     row: i,
-//                     col: j,
-//                     c1: cell.c1,
-//                     c2: cell.c2,
-//                     v1: cell.v1,
-//                     v2: cell.v2,
-//                     t: cell.t.clone(),
-//                 };
-//             }
-//         }
-//         CloneSpreadSheet { m, n, cells }
-//     }
-// }
+pub struct CloneSpreadSheet {
+    m: usize,
+    n: usize,
+    cells: Vec<Vec<SerialCell>>,
+}
+
+impl CloneSpreadSheet {
+
+    pub fn new(m: usize, n: usize) -> Self {
+        let cells = vec![
+            vec![
+                SerialCell {
+                    row: 0,
+                    col: 0,
+                    c1: None,
+                    c2: None,
+                    v1: None,
+                    v2: None,
+                    t: Type::Nul
+                };
+                n
+            ];
+            m
+        ];
+        CloneSpreadSheet { m, n, cells }
+    }
+
+    pub fn clone_spread(spreadsheet: &mut SpreadSheet) -> Self {
+        let m = spreadsheet.m;
+        let n = spreadsheet.n;
+        let mut cells = vec![
+            vec![
+                SerialCell {
+                    row: 0,
+                    col: 0,
+                    c1: None,
+                    c2: None,
+                    v1: None,
+                    v2: None,
+                    t: Type::Nul
+                };
+                n
+            ];
+            m
+        ];
+        for i in 0..m {
+            for j in 0..n {
+                let (_cor, c1, c2, v1, v2, t) = spreadsheet.get_cell_equation_parameters(i, j);
+                cells[i][j] = SerialCell {
+                    row: i,
+                    col: j,
+                    c1,
+                    c2,
+                    v1,
+                    v2,
+                    t
+                };
+            }
+        }
+        CloneSpreadSheet { m, n, cells }
+    }
+}
 
 #[derive(serde_derive::Serialize, serde_derive::Deserialize)]
 pub struct SerialSheetDiff {
@@ -99,9 +134,24 @@ impl VersionControl {
             vcs_dir,
             curr_commit: 0,
             next_commit: 1,
-            spread_sheet: SpreadSheet::new(*m, *n),
+            spread_sheet: CloneSpreadSheet::new(*m, *n),
             m: *m,
             n: *n,
+        }
+    }
+
+    pub fn dummy() -> Self {
+        let vcs_dir = "./vcs_dir".to_string();
+        let m = 1;
+        let n = 1;
+        VersionControl {
+            map: HashMap::new(),
+            vcs_dir,
+            curr_commit: 0,
+            next_commit: 1,
+            spread_sheet: CloneSpreadSheet::new(m, n),
+            m,
+            n,
         }
     }
 
@@ -115,7 +165,7 @@ impl VersionControl {
             next_commit: commit_count as usize + 1,
             m: serial_vcs.m,
             n: serial_vcs.n,
-            spread_sheet: SpreadSheet::new(serial_vcs.m, serial_vcs.n),
+            spread_sheet: CloneSpreadSheet::new(serial_vcs.m, serial_vcs.n),
         }
     }
 
@@ -124,7 +174,7 @@ impl VersionControl {
             id: self.next_commit,
             msg: commit_msg.to_string(),
             parent: self.curr_commit,
-            cells: self.get_diff_spread(spreadsheet, &self.spread_sheet),
+            cells: self.get_diff_spread(&mut CloneSpreadSheet::clone_spread(spreadsheet), &self.spread_sheet),
         };
 
         self.map
@@ -138,7 +188,7 @@ impl VersionControl {
 
         self.curr_commit = self.next_commit;
         self.next_commit += 1;
-        self.spread_sheet = spreadsheet.clone();
+        self.spread_sheet = CloneSpreadSheet::clone_spread(spreadsheet);
     }
 
     pub fn list(&self) {
@@ -160,8 +210,8 @@ impl VersionControl {
 
     pub fn get_diff_spread(
         &self,
-        current_spreadsheet: &mut SpreadSheet,
-        vcs_spreadsheet: &SpreadSheet,
+        current_spreadsheet: &mut CloneSpreadSheet,
+        vcs_spreadsheet: &CloneSpreadSheet,
     ) -> Vec<SerialCell> {
         return vec![];
         // let mut diff = Vec::new();
