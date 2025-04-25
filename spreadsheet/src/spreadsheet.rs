@@ -236,32 +236,45 @@ impl SpreadSheet {
         self.set_cell_equation_from_eq(row, col, eq)
     }
 
-    // fn check_target_in_operands(&self, eq: &Equation, row: usize, col: usize) -> bool {
-    //     let ops = eq.get_operands().clone();
-    //     let cell_ref = self.cells[row][col].clone();
-    //     if ops.iter().any(|op| op == &cell_ref) {
-    //         return true;
-    //     }
+    fn check_target_in_operands(&self, row: usize, col: usize, eq: Equation) -> bool {
 
-    //     if eq.t == Type::Sum || eq.t == Type::Avg || eq.t == Type::Dev {
-    //         let c1 = eq.get_operands()[0].borrow();
-    //         let c2 = eq.get_operands()[1].borrow();
+        // println!("check_target_in_operands: Checking for cell ({},{})", row, col);
+        let ops = eq.get_operands().clone();
+        let op_coords: Vec<_> = ops.iter()
+            .filter_map(|op| {
+                let borrowed_op = op.borrow();
+                if borrowed_op.is_cell() { // Assuming has_coordinate checks if get_coordinate is valid
+                    Some(borrowed_op.get_coordinate().clone())
+                } else {
+                    None
+                }
+            })
+        .collect();
 
-    //         let y1 = c1.get_coordinate().0;
-    //         let x1 = c1.get_coordinate().1;
-    //         let y2 = c2.get_coordinate().0;
-    //         let x2 = c2.get_coordinate().1;
+        if op_coords.iter().any(|&op| op == Coordinate(row, col)) {
+            return true;
+        }
 
-    //         for i in y1..=y2 {
-    //             for j in x1..=x2 {
-    //                 if i == row && j == col {
-    //                     return true;
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     false
-    // }
+
+        if eq.t == Type::Sum || eq.t == Type::Avg || eq.t == Type::Dev || eq.t == Type::Min || eq.t ==  Type::Max {
+            let c1 = eq.get_operands()[0].borrow();
+            let c2 = eq.get_operands()[1].borrow();
+
+            let y1 = c1.get_coordinate().0;
+            let x1 = c1.get_coordinate().1;
+            let y2 = c2.get_coordinate().0;
+            let x2 = c2.get_coordinate().1;
+
+            for i in y1..=y2 {
+                for j in x1..=x2 {
+                    if i == row && j == col {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
 
     pub fn set_cell_equation_from_eq(&mut self, row: usize, col: usize, eq: Equation) -> Status {
         // print!("New equation: ");
@@ -270,9 +283,9 @@ impl SpreadSheet {
 
         let cell_ref = self.cells[row][col].clone();
 
-        // if self.check_target_in_operands(&eq, row, col) {
-        //     return Status::Err;
-        // }
+        if self.check_target_in_operands(row, col, eq.clone()) {
+            return Status::Err;
+        }
 
         let old_eq = cell_ref.borrow().get_equation().clone();
         cell_ref

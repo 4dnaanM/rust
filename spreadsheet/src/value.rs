@@ -205,6 +205,10 @@ impl Value {
         }
     }
 
+    pub fn is_cell(&self) -> bool {
+        matches!(self, Value::Cell(_))
+    }
+
     pub fn set_equation(
         &mut self,
         eq: Equation,
@@ -244,6 +248,10 @@ impl SharedOperand {
     }
     pub fn clone(&self) -> SharedOperand {
         SharedOperand(self.0.clone())
+    }
+
+    pub fn is_cell(&self) -> bool {
+        self.borrow().is_cell()
     }
 }
 
